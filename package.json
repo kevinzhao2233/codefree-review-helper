@@ -85,7 +85,7 @@
     "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "packageManager": "npm@11.11.1"
 }
