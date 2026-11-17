@@ -35,11 +35,11 @@ reviewdeck 是一个"把大 PR diff 切成有序子 patch 供人评审"的工具
 
 ## 2. 使用场景
 
-| 场景 | 输入 | 优先级 |
-|---|---|---|
-| A. 研发云 MR 评审（主场景） | 研发云 MR 链接，或 `repoFullName + mergeId` | **优先实现** |
-| B. 本地仓库评审 | 本地 git 仓库路径 + 分支范围 | 兜底，复用 `git diff` |
-| C. 直接提供 diff 文件 | 一个 `.diff`/`.patch` 文件路径 | 兜底，直接进入 index |
+| 场景                        | 输入                                        | 优先级                |
+| --------------------------- | ------------------------------------------- | --------------------- |
+| A. 研发云 MR 评审（主场景） | 研发云 MR 链接，或 `repoFullName + mergeId` | **优先实现**          |
+| B. 本地仓库评审             | 本地 git 仓库路径 + 分支范围                | 兜底，复用 `git diff` |
+| C. 直接提供 diff 文件       | 一个 `.diff`/`.patch` 文件路径              | 兜底，直接进入 index  |
 
 场景 B/C 为 skill 中的次要分支，规则与现有 `skills/reviewdeck/SKILL.md` 一致，本文档 AC 以场景 A 为主。
 
@@ -130,12 +130,12 @@ diff --git a/<srcFile> b/<dstFile>
 
 **数据映射**（`submission.comments[i]` → 研发云 MCP 参数）：
 
-| submission 字段 | 含义 | 研发云参数 |
-|---|---|---|
-| `file` | 文件路径 | `filePath`（行内）/ 正文标注（全局） |
-| `line` | 行号（additions=新文件 1-based；deletions=旧文件 1-based） | `startLine`=`endLine`=`line`（行内） |
-| `side` | additions/deletions | additions→行内；deletions→全局 fallback |
-| `body` | 评论正文 | `rowComment`（正文+去重 marker） |
+| submission 字段 | 含义                                                       | 研发云参数                              |
+| --------------- | ---------------------------------------------------------- | --------------------------------------- |
+| `file`          | 文件路径                                                   | `filePath`（行内）/ 正文标注（全局）    |
+| `line`          | 行号（additions=新文件 1-based；deletions=旧文件 1-based） | `startLine`=`endLine`=`line`（行内）    |
+| `side`          | additions/deletions                                        | additions→行内；deletions→全局 fallback |
+| `body`          | 评论正文                                                   | `rowComment`（正文+去重 marker）        |
 
 **必填元数据**（`add_mr_row_comment` 需要）：`repoFullName`、`mergeId`、`branchName`、`commitId`、`diffType` —— 来源在 T1 实测确认（`get_mr_info` 或 `merge_file_changes` 的返回字段）。
 
@@ -171,12 +171,12 @@ diff --git a/<srcFile> b/<dstFile>
 
 ## 5. 交付物
 
-| 交付物 | 说明 |
-|---|---|
-| `docs/design.md` | 本文档（唯一设计文档，含 AC 与验收结果） |
-| `skills/codefree-reviewdeck/SKILL.md` | 面向 CodeFree 的新 skill 主文件 |
-| `skills/codefree-reviewdeck/references/split.md` | 从 `skills/reviewdeck/references/split.md` 复制（保证 skill 可独立安装；文件头注明来源与同步关系） |
-| `skills/codefree-reviewdeck/references/rewrite.md` | 同上 |
+| 交付物                                             | 说明                                                                                               |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `docs/design.md`                                   | 本文档（唯一设计文档，含 AC 与验收结果）                                                           |
+| `skills/codefree-reviewdeck/SKILL.md`              | 面向 CodeFree 的新 skill 主文件                                                                    |
+| `skills/codefree-reviewdeck/references/split.md`   | 从 `skills/reviewdeck/references/split.md` 复制（保证 skill 可独立安装；文件头注明来源与同步关系） |
+| `skills/codefree-reviewdeck/references/rewrite.md` | 同上                                                                                               |
 
 不修改：`src/`、`nap/`、`skills/reviewdeck/`、`package.json` 等一切现有文件。
 
@@ -188,13 +188,13 @@ skill 启用方式：源文件在仓库内；使用时由用户复制/链接到 
 
 每个任务一个独立 commit，commit message 携带任务编号与名称。
 
-| 任务 | 内容 | commit message |
-|---|---|---|
-| **T0** | 设计文档 + AGENTS.md 协作规则（本任务，审批后提交） | `T0: 设计文档与协作规则` |
-| **T1** | 研发云 MCP 实测（§9 的 5 项），结论回填本文档 §10 | `T1: 研发云 MCP 实测` |
-| **T2** | 编写 `skills/codefree-reviewdeck/`（SKILL.md + references 副本） | `T2: 编写 codefree-reviewdeck skill` |
-| **T3** | 本地链路 dry-run：用 T1 拿到的真实 MR diff 走 index → split → render，验证 §8 中 AC-2/AC-3 相关条目 | `T3: 本地链路 dry-run 验证` |
-| **T4** | 端到端验收：真实 MR 评审 + 回帖（fzp-next），按 §8 全部 AC 逐项验收，结果回填 §11；发现问题在本任务内修复并追加 commit | `T4: 端到端验收` |
+| 任务   | 内容                                                                                                                   | commit message                       |
+| ------ | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| **T0** | 设计文档 + AGENTS.md 协作规则（本任务，审批后提交）                                                                    | `T0: 设计文档与协作规则`             |
+| **T1** | 研发云 MCP 实测（§9 的 5 项），结论回填本文档 §10                                                                      | `T1: 研发云 MCP 实测`                |
+| **T2** | 编写 `skills/codefree-reviewdeck/`（SKILL.md + references 副本）                                                       | `T2: 编写 codefree-reviewdeck skill` |
+| **T3** | 本地链路 dry-run：用 T1 拿到的真实 MR diff 走 index → split → render，验证 §8 中 AC-2/AC-3 相关条目                    | `T3: 本地链路 dry-run 验证`          |
+| **T4** | 端到端验收：真实 MR 评审 + 回帖（fzp-next），按 §8 全部 AC 逐项验收，结果回填 §11；发现问题在本任务内修复并追加 commit | `T4: 端到端验收`                     |
 
 **T1 需要用户协作**：提供一个 `fzp-next` 仓库的测试 MR（已存在的或新创建的均可），用于只读实测（取 diff/元数据）；发评论实测放在 T4，且发送前会按 §4.4 向用户确认。
 
@@ -202,15 +202,15 @@ skill 启用方式：源文件在仓库内；使用时由用户复制/链接到 
 
 ## 7. 关键技术事实（已从代码确认）
 
-| 事实 | 出处 | 影响 |
-|---|---|---|
-| `parsePatch` 只认 `diff --git` 文件头 + `@@ -s,c +s,c @@` hunk 头 | `src/core/patch.ts:20-86` | 拼装格式硬性要求 |
-| hunk 行号参与 split 组合验证（`applyPatch` 校验 context） | `src/core/patch.ts:149-225` | 行号必须准确 |
-| 索引输出：`## <file>` + `[index] +/- L<lineNo>: <content>` | `src/core/split.ts:106-120` | CodeFree 据此分组 |
-| `ReviewComment = {file, line, side, body, ...}`；additions 的 line 为新文件 1-based 行号 | `src/core/types.ts:49-80` | 回帖映射依据 |
-| `submission.comments` = 用户自己 + 接受的 draft；被拒/未处理的 draft 不在其中 | `src/cli` render 流程 | 回帖只处理 comments |
-| GitLab 拼 diff 的参考实现 | `forge.py:93-109` | T2 拼装逻辑蓝本 |
-| CLI 入口：`index`/`split`/`render`/`serve` 四个子命令，本地模式只用前三个 | `src/cli/main.ts` | 运行方式 |
+| 事实                                                                                     | 出处                        | 影响                |
+| ---------------------------------------------------------------------------------------- | --------------------------- | ------------------- |
+| `parsePatch` 只认 `diff --git` 文件头 + `@@ -s,c +s,c @@` hunk 头                        | `src/core/patch.ts:20-86`   | 拼装格式硬性要求    |
+| hunk 行号参与 split 组合验证（`applyPatch` 校验 context）                                | `src/core/patch.ts:149-225` | 行号必须准确        |
+| 索引输出：`## <file>` + `[index] +/- L<lineNo>: <content>`                               | `src/core/split.ts:106-120` | CodeFree 据此分组   |
+| `ReviewComment = {file, line, side, body, ...}`；additions 的 line 为新文件 1-based 行号 | `src/core/types.ts:49-80`   | 回帖映射依据        |
+| `submission.comments` = 用户自己 + 接受的 draft；被拒/未处理的 draft 不在其中            | `src/cli` render 流程       | 回帖只处理 comments |
+| GitLab 拼 diff 的参考实现                                                                | `forge.py:93-109`           | T2 拼装逻辑蓝本     |
+| CLI 入口：`index`/`split`/`render`/`serve` 四个子命令，本地模式只用前三个                | `src/cli/main.ts`           | 运行方式            |
 
 **CLI 运行方式（默认，待用户审批时确认）**：本地构建 `npm run build:cli` 后 `node dist/reviewdeck.mjs <subcommand>`；若用户偏好 `npx reviewdeck` 方式再调整 skill 措辞。
 
@@ -264,17 +264,17 @@ skill 启用方式：源文件在仓库内；使用时由用户复制/链接到 
 
 ## 9. 风险与待实测项
 
-| # | 风险/待确认 | 影响 | 缓解 | 状态（T1 后） |
-|---|---|---|---|---|
-| R-1 | `merge_file_diff` 返回是否带 `@@` hunk 头（含行号） | 决定 T2 拼装复杂度：带 → 补外壳；不带 → 需行号计算 | T1 第一优先实测 | **已解除**：返回结构化 JSON（无文本 hunk 头），走 `to-diff.mjs` 转换（§10 M-1） |
-| R-2 | `add_mr_row_comment` 的 `startLine/endLine` 行号语义（新文件行号 or 其他） | AC-4.1 行内落点正确性 | T1 实测 + T4 页面核对 | **部分解除**：新文件 1-based（与 additions 一致），发送侧 T4 页面复核 |
-| R-3 | `add_mr_row_comment` 必填元数据（`commitId`/`branchName`/`diffType`）的字段来源 | T2 skill 取数指令 | T1 实测 `get_mr_info`/`merge_file_changes` 返回结构 | **已解除**：见 §10 M-3 |
-| R-4 | 研发云 MR 页面链接格式（URL 正则） | skill 的定位输入解析 | T1 实测 | **已解除**：见 §10 M-4 |
-| R-5 | 大文件 diff 的返回上限/截断行为 | AC-2.1/2.3 完整性 | T1 用大文件 MR 实测 | **部分解除**：`codeLineExceed` 标志存在（本 MR 均 false）；skill 按标志跳过并提示，`codeLineExceed=true` 的实际行为 T4 留意 |
-| R-6 | 已合并 MR 是否还能发行内评论 | AC-1.3 回帖可行性 | T4 实测（或只做告知） | 待 T4 |
-| R-7 | 依赖未安装导致 `vp test`/构建不可用 | AC-6.2 执行 | 用户处理依赖（见 §6 协作） | 持续 |
-| R-8 | `render` 需打开浏览器 —— 假定用户在本机跑 CodeFree 会话（浏览器可弹出） | 步骤 ⑤ 可用性 | 使用场景约定为本机；远端场景不在本期范围 | 持续 |
-| R-9 | **新发现**：`merge_request_list` 的 status 枚举失配（实际 MR 状态 7，按 0/1/2 查不到） | skill 的 MR 定位路径 | 定位一律走 `get_mr_info(mergeId)` 直查（§10 M-6.1） | 已缓解 |
+| #   | 风险/待确认                                                                            | 影响                                               | 缓解                                                | 状态（T1 后）                                                                                                               |
+| --- | -------------------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| R-1 | `merge_file_diff` 返回是否带 `@@` hunk 头（含行号）                                    | 决定 T2 拼装复杂度：带 → 补外壳；不带 → 需行号计算 | T1 第一优先实测                                     | **已解除**：返回结构化 JSON（无文本 hunk 头），走 `to-diff.mjs` 转换（§10 M-1）                                             |
+| R-2 | `add_mr_row_comment` 的 `startLine/endLine` 行号语义（新文件行号 or 其他）             | AC-4.1 行内落点正确性                              | T1 实测 + T4 页面核对                               | **部分解除**：新文件 1-based（与 additions 一致），发送侧 T4 页面复核                                                       |
+| R-3 | `add_mr_row_comment` 必填元数据（`commitId`/`branchName`/`diffType`）的字段来源        | T2 skill 取数指令                                  | T1 实测 `get_mr_info`/`merge_file_changes` 返回结构 | **已解除**：见 §10 M-3                                                                                                      |
+| R-4 | 研发云 MR 页面链接格式（URL 正则）                                                     | skill 的定位输入解析                               | T1 实测                                             | **已解除**：见 §10 M-4                                                                                                      |
+| R-5 | 大文件 diff 的返回上限/截断行为                                                        | AC-2.1/2.3 完整性                                  | T1 用大文件 MR 实测                                 | **部分解除**：`codeLineExceed` 标志存在（本 MR 均 false）；skill 按标志跳过并提示，`codeLineExceed=true` 的实际行为 T4 留意 |
+| R-6 | 已合并 MR 是否还能发行内评论                                                           | AC-1.3 回帖可行性                                  | T4 实测（或只做告知）                               | 待 T4                                                                                                                       |
+| R-7 | 依赖未安装导致 `vp test`/构建不可用                                                    | AC-6.2 执行                                        | 用户处理依赖（见 §6 协作）                          | 持续                                                                                                                        |
+| R-8 | `render` 需打开浏览器 —— 假定用户在本机跑 CodeFree 会话（浏览器可弹出）                | 步骤 ⑤ 可用性                                      | 使用场景约定为本机；远端场景不在本期范围            | 持续                                                                                                                        |
+| R-9 | **新发现**：`merge_request_list` 的 status 枚举失配（实际 MR 状态 7，按 0/1/2 查不到） | skill 的 MR 定位路径                               | 定位一律走 `get_mr_info(mergeId)` 直查（§10 M-6.1） | 已缓解                                                                                                                      |
 
 ---
 
@@ -282,14 +282,14 @@ skill 启用方式：源文件在仓库内；使用时由用户复制/链接到 
 
 实测对象：fzp-next 测试 MR（`gsyw-fqzyjczxt/fzp-next`，mergeId=1735339，"[SPEC-FZP-001][Init] SDD 初始化项目骨架"，4 个变更文件，+440/-0）。实测日期：2026-11-17。
 
-| # | 实测项 | 工具/方法 | 结果 | 结论与影响 |
-|---|---|---|---|---|
-| M-1 | `merge_file_diff` 返回格式 | 4 个文件全样本（E/A/空文件） | **Gerrit 风格结构化 JSON，非文本 diff**（结构见下） | T2 需要"结构化 → unified diff"转换脚本 `scripts/to-diff.mjs`；算法已验证（440/440 对账） |
-| M-2 | `add_mr_row_comment` 行号语义 | `.gitignore` 样本 hunk 分析 | `hunk.newStart` 从 1 起，新文件 1-based 行号 | 与 reviewdeck additions 的 `line` 语义一致；发送侧 T4 页面复核 |
-| M-3 | 必填元数据来源 | `merge_file_changes` / `get_mr_info` 返回 | `commitId` ← `currentCommitId`；`diffType` ← `diffType`；`branchName` ← `get_mr_info.resourceBranchName`（源分支，T4 复核） | 元数据链路打通 |
-| M-4 | MR 链接格式 | 用户提供样本 | `https://www.srdcloud.cn/code/{projId}/CodeMergeView/{mergeId}/mergeInfo` | 正则提取 `mergeId` 即可（projId 无需） |
-| M-5 | 分页与截断行为 | 本 MR 4 文件单页取完 | `pageSize` 默认 10，`dataCount` 供分页循环判断；`codeLineExceed` 超限标志（本 MR 均 false） | T2 实现分页循环；`codeLineExceed=true` 时跳过该文件并提示人工评审 |
-| M-6 | 其他实测中的发现 | — | 三项，见下 | 影响 skill 定位与转换器 |
+| #   | 实测项                        | 工具/方法                                 | 结果                                                                                                                        | 结论与影响                                                                               |
+| --- | ----------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| M-1 | `merge_file_diff` 返回格式    | 4 个文件全样本（E/A/空文件）              | **Gerrit 风格结构化 JSON，非文本 diff**（结构见下）                                                                         | T2 需要"结构化 → unified diff"转换脚本 `scripts/to-diff.mjs`；算法已验证（440/440 对账） |
+| M-2 | `add_mr_row_comment` 行号语义 | `.gitignore` 样本 hunk 分析               | `hunk.newStart` 从 1 起，新文件 1-based 行号                                                                                | 与 reviewdeck additions 的 `line` 语义一致；发送侧 T4 页面复核                           |
+| M-3 | 必填元数据来源                | `merge_file_changes` / `get_mr_info` 返回 | `commitId` ← `currentCommitId`；`diffType` ← `diffType`；`branchName` ← `get_mr_info.resourceBranchName`（源分支，T4 复核） | 元数据链路打通                                                                           |
+| M-4 | MR 链接格式                   | 用户提供样本                              | `https://www.srdcloud.cn/code/{projId}/CodeMergeView/{mergeId}/mergeInfo`                                                   | 正则提取 `mergeId` 即可（projId 无需）                                                   |
+| M-5 | 分页与截断行为                | 本 MR 4 文件单页取完                      | `pageSize` 默认 10，`dataCount` 供分页循环判断；`codeLineExceed` 超限标志（本 MR 均 false）                                 | T2 实现分页循环；`codeLineExceed=true` 时跳过该文件并提示人工评审                        |
+| M-6 | 其他实测中的发现              | —                                         | 三项，见下                                                                                                                  | 影响 skill 定位与转换器                                                                  |
 
 ### M-6 发现明细
 
@@ -301,21 +301,23 @@ skill 启用方式：源文件在仓库内；使用时由用户复制/链接到 
 
 ```json
 {
-  "metaA": {},                          // A 类型为空对象；E 类型 {"name": "<file>"}
-  "metaB": {"name": "<fileName>"},
-  "changeType": "ADD",                  // A 类型带此字段；E 类型无
+  "metaA": {}, // A 类型为空对象；E 类型 {"name": "<file>"}
+  "metaB": { "name": "<fileName>" },
+  "changeType": "ADD", // A 类型带此字段；E 类型无
   "content": [
     {
-      "ab": ["上下文行"],               // unchanged 行（两侧同）
-      "a": ["被删除行"],                // 旧侧独有
-      "b": ["新增行"],                  // 新侧独有
+      "ab": ["上下文行"], // unchanged 行（两侧同）
+      "a": ["被删除行"], // 旧侧独有
+      "b": ["新增行"], // 新侧独有
       "hunk": {
-        "oldStart": 0, "oldEnd": -1,    // A/全增文件：0/-1（旧侧无内容）
-        "newStart": 1, "newEnd": 266    // 新文件 1-based 行范围（含端点）
+        "oldStart": 0,
+        "oldEnd": -1, // A/全增文件：0/-1（旧侧无内容）
+        "newStart": 1,
+        "newEnd": 266 // 新文件 1-based 行范围（含端点）
       }
     }
   ],
-  "codeLineExceed": false               // true = 该文件 diff 超限（不完整），跳过并提示人工
+  "codeLineExceed": false // true = 该文件 diff 超限（不完整），跳过并提示人工
 }
 ```
 
@@ -333,27 +335,27 @@ skill 启用方式：源文件在仓库内；使用时由用户复制/链接到 
 
 ## 11. 验收记录（T4 回填）
 
-| AC | 结果（通过/不通过） | 证据/备注 | 日期 |
-|---|---|---|---|
-| AC-1.1 | 待验收 | | |
-| AC-1.2 | 待验收 | | |
-| AC-1.3 | 待验收 | | |
-| AC-2.1 | 待验收 | | |
-| AC-2.2 | 待验收 | | |
-| AC-2.3 | 待验收 | | |
-| AC-2.4 | 待验收 | | |
-| AC-3.1 | 待验收 | | |
-| AC-3.2 | 待验收 | | |
-| AC-3.3 | 待验收 | | |
-| AC-4.1 | 待验收 | | |
-| AC-4.2 | 待验收 | | |
-| AC-4.3 | 待验收 | | |
-| AC-4.4 | 待验收 | | |
-| AC-4.5 | 待验收 | | |
-| AC-4.6 | 待验收 | | |
-| AC-5.1 | 待验收 | | |
-| AC-5.2 | 待验收 | | |
-| AC-5.3 | 待验收 | | |
-| AC-6.1 | 待验收 | | |
-| AC-6.2 | 待验收 | | |
-| AC-6.3 | 待验收 | | |
+| AC     | 结果（通过/不通过） | 证据/备注 | 日期 |
+| ------ | ------------------- | --------- | ---- |
+| AC-1.1 | 待验收              |           |      |
+| AC-1.2 | 待验收              |           |      |
+| AC-1.3 | 待验收              |           |      |
+| AC-2.1 | 待验收              |           |      |
+| AC-2.2 | 待验收              |           |      |
+| AC-2.3 | 待验收              |           |      |
+| AC-2.4 | 待验收              |           |      |
+| AC-3.1 | 待验收              |           |      |
+| AC-3.2 | 待验收              |           |      |
+| AC-3.3 | 待验收              |           |      |
+| AC-4.1 | 待验收              |           |      |
+| AC-4.2 | 待验收              |           |      |
+| AC-4.3 | 待验收              |           |      |
+| AC-4.4 | 待验收              |           |      |
+| AC-4.5 | 待验收              |           |      |
+| AC-4.6 | 待验收              |           |      |
+| AC-5.1 | 待验收              |           |      |
+| AC-5.2 | 待验收              |           |      |
+| AC-5.3 | 待验收              |           |      |
+| AC-6.1 | 待验收              |           |      |
+| AC-6.2 | 待验收              |           |      |
+| AC-6.3 | 待验收              |           |      |
