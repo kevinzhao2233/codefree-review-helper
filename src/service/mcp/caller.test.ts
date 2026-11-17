@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vite-plus/test";
 import { Hono } from "hono";
 import { SignJWT, exportJWK, generateKeyPair } from "jose";
 import { CallerVerifier } from "@neutree-ai/server-sdk";

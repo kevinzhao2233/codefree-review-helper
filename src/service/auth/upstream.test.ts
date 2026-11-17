@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { randomUUID } from "node:crypto";
 import { MemoryStorage } from "../storage/memory.ts";
 import { initSigningKey } from "./token.ts";

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { parsePatch } from "./patch.ts";
 import { segmentPatch } from "./segment.ts";
 import type { ResolvedRewriteBlock, RewriteRegion } from "./types.ts";
