@@ -113,7 +113,12 @@ for (let i = 0; i < entries.length; i++) {
     const oldCount = blk.ab.length + blk.a.length;
     const newCount = blk.ab.length + blk.b.length;
     if (oldCount === 0 && newCount === 0) continue;
-    body.push(`@@ -${oldStart},${oldCount} +${newStart},${newCount} @@`);
+    // A 文件 srcStart 恒 0、D 文件 dstStart 恒 0（git 标准，也是 reviewdeck 切分器
+    // 识别新文件/删除文件的依据，src/core/split.ts 的 fixHunkLineNumbers 与
+    // generateSubPatches 依赖 -0,0 / +0,0 信号）；E 文件用真实指针行号
+    const srcOut = type === "A" ? 0 : oldStart;
+    const dstOut = type === "D" ? 0 : newStart;
+    body.push(`@@ -${srcOut},${oldCount} +${dstOut},${newCount} @@`);
     for (const l of blk.ab) body.push(" " + l);
     for (const l of blk.a) body.push("-" + l);
     for (const l of blk.b) body.push("+" + l);

@@ -33,6 +33,8 @@ metadata:
 
 ```bash
 # 方式一（默认）：本地构建产物
+# 本地构建需 build:cli（CLI 本体）+ build:web（render 的评审 UI，缺它 render 报
+# "Web UI not built"）。一次性执行 npm run build 即含两者。
 node <reviewdeck-dist>/reviewdeck.mjs <subcommand>
 # 方式二：npm 包
 npx reviewdeck@^0.6.0 <subcommand>
