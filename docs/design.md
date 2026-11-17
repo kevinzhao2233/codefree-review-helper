@@ -1,6 +1,6 @@
 # codefree-reviewdeck 设计文档
 
-> **状态：待审批** —— 审批通过后开始 T1 及后续任务。
+> **状态：执行中** —— T0 已提交（设计已审批），T1 实测完成并回填 §10，T2 起依次推进。
 >
 > **文档地位**：本文件是"reviewdeck 转换为基于 CodeFree 与研发云"任务的**唯一设计文档**，承载需求、方案、任务拆解、AC 与验收结果。实测结论与验收结果直接回填本文件对应章节，禁止新建其他设计/需求/验收文档。
 
@@ -110,10 +110,10 @@ diff --git a/<srcFile> b/<dstFile>
 - hunk 头 `@@` 行号必须与内容一致（split 验证依赖 `applyPatch`/`reconstructBase`）；
 - 参考实现：`nap/skills/reviewdeck/scripts/forge.py` 中 `gitlab_file_diff()` 的拼装方式（`forge.py:93-109`）。
 
-**关键决策点（T1 实测后确定）**：
+**关键决策点（T1 实测已定，结论见 §10）**：
 
-- 若 `merge_file_diff` 返回已含带行号的 `@@` hunk 头 → 直接补文件头外壳拼接（简单，预期路径）；
-- 若返回不带 hunk 头 → 需按行前缀自行计算行号再拼装（复杂度上升，T2 增加行号计算逻辑）；
+- ~~若 `merge_file_diff` 返回已含带行号的 `@@` hunk 头 → 直接补文件头外壳拼接~~
+- **实际：返回 Gerrit 风格结构化 JSON（`ab/a/b` 数组 + `hunk` 行号），非文本 diff** → T2 落地为 `scripts/to-diff.mjs` 转换脚本（顺序指针法 + 尾部空串修正，已用真实 MR 验证 440/440 对账，见 §10 转换算法）；
 - 若 diff 为空/MR 无变更 → 报错停止。
 
 **大 MR 处理**：分页遍历不设上限，逐文件追加写入，避免一次性内存拼接；单文件超大 diff 的截断风险见 §9 R-5。
@@ -264,29 +264,70 @@ skill 启用方式：源文件在仓库内；使用时由用户复制/链接到 
 
 ## 9. 风险与待实测项
 
-| # | 风险/待确认 | 影响 | 缓解 |
-|---|---|---|---|
-| R-1 | `merge_file_diff` 返回是否带 `@@` hunk 头（含行号） | 决定 T2 拼装复杂度：带 → 补外壳；不带 → 需行号计算 | T1 第一优先实测 |
-| R-2 | `add_mr_row_comment` 的 `startLine/endLine` 行号语义（新文件行号 or 其他） | AC-4.1 行内落点正确性 | T1 实测 + T4 页面核对 |
-| R-3 | `add_mr_row_comment` 必填元数据（`commitId`/`branchName`/`diffType`）的字段来源 | T2 skill 取数指令 | T1 实测 `get_mr_info`/`merge_file_changes` 返回结构 |
-| R-4 | 研发云 MR 页面链接格式（URL 正则） | skill 的定位输入解析 | T1 实测 |
-| R-5 | 大文件 diff 的返回上限/截断行为 | AC-2.1/2.3 完整性 | T1 用大文件 MR 实测 |
-| R-6 | 已合并 MR 是否还能发行内评论 | AC-1.3 回帖可行性 | T4 实测（或只做告知） |
-| R-7 | 依赖未安装导致 `vp test`/构建不可用 | AC-6.2 执行 | 用户处理依赖（见 §6 协作） |
-| R-8 | `render` 需打开浏览器 —— 假定用户在本机跑 CodeFree 会话（浏览器可弹出） | 步骤 ⑤ 可用性 | 使用场景约定为本机；远端场景不在本期范围 |
+| # | 风险/待确认 | 影响 | 缓解 | 状态（T1 后） |
+|---|---|---|---|---|
+| R-1 | `merge_file_diff` 返回是否带 `@@` hunk 头（含行号） | 决定 T2 拼装复杂度：带 → 补外壳；不带 → 需行号计算 | T1 第一优先实测 | **已解除**：返回结构化 JSON（无文本 hunk 头），走 `to-diff.mjs` 转换（§10 M-1） |
+| R-2 | `add_mr_row_comment` 的 `startLine/endLine` 行号语义（新文件行号 or 其他） | AC-4.1 行内落点正确性 | T1 实测 + T4 页面核对 | **部分解除**：新文件 1-based（与 additions 一致），发送侧 T4 页面复核 |
+| R-3 | `add_mr_row_comment` 必填元数据（`commitId`/`branchName`/`diffType`）的字段来源 | T2 skill 取数指令 | T1 实测 `get_mr_info`/`merge_file_changes` 返回结构 | **已解除**：见 §10 M-3 |
+| R-4 | 研发云 MR 页面链接格式（URL 正则） | skill 的定位输入解析 | T1 实测 | **已解除**：见 §10 M-4 |
+| R-5 | 大文件 diff 的返回上限/截断行为 | AC-2.1/2.3 完整性 | T1 用大文件 MR 实测 | **部分解除**：`codeLineExceed` 标志存在（本 MR 均 false）；skill 按标志跳过并提示，`codeLineExceed=true` 的实际行为 T4 留意 |
+| R-6 | 已合并 MR 是否还能发行内评论 | AC-1.3 回帖可行性 | T4 实测（或只做告知） | 待 T4 |
+| R-7 | 依赖未安装导致 `vp test`/构建不可用 | AC-6.2 执行 | 用户处理依赖（见 §6 协作） | 持续 |
+| R-8 | `render` 需打开浏览器 —— 假定用户在本机跑 CodeFree 会话（浏览器可弹出） | 步骤 ⑤ 可用性 | 使用场景约定为本机；远端场景不在本期范围 | 持续 |
+| R-9 | **新发现**：`merge_request_list` 的 status 枚举失配（实际 MR 状态 7，按 0/1/2 查不到） | skill 的 MR 定位路径 | 定位一律走 `get_mr_info(mergeId)` 直查（§10 M-6.1） | 已缓解 |
 
 ---
 
 ## 10. 实测结果记录（T1 回填）
 
+实测对象：fzp-next 测试 MR（`gsyw-fqzyjczxt/fzp-next`，mergeId=1735339，"[SPEC-FZP-001][Init] SDD 初始化项目骨架"，4 个变更文件，+440/-0）。实测日期：2026-11-17。
+
 | # | 实测项 | 工具/方法 | 结果 | 结论与影响 |
 |---|---|---|---|---|
-| M-1 | `merge_file_diff` 返回格式 | fzp-next 测试 MR，抽样 ≥2 文件 | 待实测 | |
-| M-2 | `add_mr_row_comment` 行号语义 | （只读侧验证：对比文件行号；发送侧并入 T4） | 待实测 | |
-| M-3 | 必填元数据来源 | `get_mr_info` / `merge_file_changes` 返回结构 | 待实测 | |
-| M-4 | MR 链接格式 | 研发云 MR 页面 URL | 待实测 | |
-| M-5 | 分页与截断行为 | 大 MR / 大文件实测 | 待实测 | |
-| M-6 | 其他实测中的发现 | — | 待实测 | |
+| M-1 | `merge_file_diff` 返回格式 | 4 个文件全样本（E/A/空文件） | **Gerrit 风格结构化 JSON，非文本 diff**（结构见下） | T2 需要"结构化 → unified diff"转换脚本 `scripts/to-diff.mjs`；算法已验证（440/440 对账） |
+| M-2 | `add_mr_row_comment` 行号语义 | `.gitignore` 样本 hunk 分析 | `hunk.newStart` 从 1 起，新文件 1-based 行号 | 与 reviewdeck additions 的 `line` 语义一致；发送侧 T4 页面复核 |
+| M-3 | 必填元数据来源 | `merge_file_changes` / `get_mr_info` 返回 | `commitId` ← `currentCommitId`；`diffType` ← `diffType`；`branchName` ← `get_mr_info.resourceBranchName`（源分支，T4 复核） | 元数据链路打通 |
+| M-4 | MR 链接格式 | 用户提供样本 | `https://www.srdcloud.cn/code/{projId}/CodeMergeView/{mergeId}/mergeInfo` | 正则提取 `mergeId` 即可（projId 无需） |
+| M-5 | 分页与截断行为 | 本 MR 4 文件单页取完 | `pageSize` 默认 10，`dataCount` 供分页循环判断；`codeLineExceed` 超限标志（本 MR 均 false） | T2 实现分页循环；`codeLineExceed=true` 时跳过该文件并提示人工评审 |
+| M-6 | 其他实测中的发现 | — | 三项，见下 | 影响 skill 定位与转换器 |
+
+### M-6 发现明细
+
+1. **`merge_request_list` 的 status 枚举失配**：工具文档说 0 开启/1 已合并/2 已关闭，但本 MR 实际 `mergeRequestStatus=7`，用 status=0 查不到（返回空但"成功"）。**skill 定位一律走 `get_mr_info(mergeId)` 直查**，列表接口仅作辅助；
+2. **尾部空串 bug**：文件末尾换行符会被塞成 `b` 数组尾部 `""`（`AGENTS.md` 的 b 有 174 个元素，`hunk.newEnd=173`）。转换器必须以 `hunk.newEnd` 为准丢弃超出的尾部空串；
+3. **`projName` 是项目标识**（如 `gsyw-fqzyjczxt`），非仓库名；`repoFullName` = `"<项目标识>/<仓库名>"`。
+
+### M-1 格式细节（`merge_file_diff` 返回结构）
+
+```json
+{
+  "metaA": {},                          // A 类型为空对象；E 类型 {"name": "<file>"}
+  "metaB": {"name": "<fileName>"},
+  "changeType": "ADD",                  // A 类型带此字段；E 类型无
+  "content": [
+    {
+      "ab": ["上下文行"],               // unchanged 行（两侧同）
+      "a": ["被删除行"],                // 旧侧独有
+      "b": ["新增行"],                  // 新侧独有
+      "hunk": {
+        "oldStart": 0, "oldEnd": -1,    // A/全增文件：0/-1（旧侧无内容）
+        "newStart": 1, "newEnd": 266    // 新文件 1-based 行范围（含端点）
+      }
+    }
+  ],
+  "codeLineExceed": false               // true = 该文件 diff 超限（不完整），跳过并提示人工
+}
+```
+
+- 空文件（A 且 0 行）：`content: []`；
+- E 行级修改样本（`.gitignore`）：`ab`（上下文）与 `b`（新增）分块返回，`hunk.oldStart=1, oldEnd=0`。
+
+### 转换算法（已用真实 MR 验证，440/440 对账通过）
+
+1. **尾部空串修正**：`sum(ab+b)` 超过 `max(hunk.newEnd)` 时，从最后一个块尾部丢弃空串直到相等；
+2. **顺序指针遍历**：`oldLine=1, newLine=1`；每块按 `ab → a → b` 输出 ` /-/+` 行，块内行数累进指针；
+3. **文件头外壳**：按 `diffType` 生成 `diff --git` + `new file mode 100644` / `deleted file mode 100644` + `--- a|/dev/null` / `+++ b|/dev/null`；
+4. **对账**：转换后 `+/-` 行数必须等于 `sum(addLines+delLines)`，不等则报错。
 
 ---
 
