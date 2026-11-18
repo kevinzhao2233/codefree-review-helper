@@ -70,7 +70,7 @@ export function CommentBubble({
       <span className="annotation-body flex-1 whitespace-pre-wrap leading-6">{comment.body}</span>
       <button
         onClick={onDelete}
-        className="annotation-meta mt-0.5 shrink-0 rounded p-1 hover:bg-black/10 hover:text-foreground"
+        className="annotation-meta mt-0.5 shrink-0 rounded p-1 hover:bg-white/10 hover:text-foreground"
         title="删除评论"
       >
         <X className="size-3" />

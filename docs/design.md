@@ -419,36 +419,39 @@ T3 已验证 AC：AC-2.1（单页场景）、AC-2.2、AC-2.3（4 文件全量）
 
 ### 13.1 主题改造（W-1、W-3）
 
+> **修正记录（2026-11-18）**：T6 首次实现为浅色主题（白底近黑字）。用户浏览器验收后澄清："主色调是白色"指**深色背景 + 白色主色**（shadcn 默认 dark 风格，主色 ≈ #e5e5e5），T10 验收修复将主题反转为下表的 shadcn neutral dark 方案。T6 的 lang/title/中文化等其余改动不变。
+
 `src/web/index.html`：
 
 - `lang="en" class="dark"` → `lang="zh-CN"`（移除 dark class）；
 - `<title>reviewdeck Review</title>` → `<title>reviewdeck 评审</title>`。
 
-`src/web/app.css` `@theme` 替换为 shadcn neutral light 色板：
+`src/web/app.css` `@theme` 替换为 shadcn neutral dark 色板：
 
-| token                        | 值                        | 说明                |
-| ---------------------------- | ------------------------- | ------------------- |
-| `--color-background`         | `oklch(1 0 0)`            | 纯白                |
-| `--color-foreground`         | `oklch(0.145 0 0)`        | 近黑                |
-| `--color-card`               | `oklch(1 0 0)`            | 纯白                |
-| `--color-surface`            | `oklch(0.968 0 0)`        | 侧栏选中/hover 背景 |
-| `--color-muted`              | `oklch(0.968 0 0)`        |                     |
-| `--color-muted-foreground`   | `oklch(0.556 0 0)`        |                     |
-| `--color-border`             | `oklch(0.922 0 0)`        | ≈ #e5e5e5           |
-| `--color-border-subtle`      | `oklch(0.955 0 0)`        |                     |
-| `--color-primary`            | `oklch(0.205 0 0)`        | 近黑                |
-| `--color-primary-foreground` | `oklch(0.985 0 0)`        |                     |
-| `--color-primary-muted`      | `oklch(0.205 0 0 / 0.08)` |                     |
-| `--color-success`            | `oklch(0.55 0.14 155)`    | 浅底可读绿          |
-| `--color-warning`            | `oklch(0.62 0.13 75)`     | 浅底可读琥珀        |
-| `--color-destructive`        | `oklch(0.55 0.2 25)`      |                     |
-| `--color-info`               | `oklch(0.55 0.12 240)`    |                     |
+| token                        | 值                          | 说明                  |
+| ---------------------------- | --------------------------- | --------------------- |
+| `--color-background`         | `oklch(0.145 0 0)`          | 深黑                  |
+| `--color-foreground`         | `oklch(0.985 0 0)`          | 近白                  |
+| `--color-card`               | `oklch(0.205 0 0)`          | 深灰                  |
+| `--color-surface`            | `oklch(0.24 0 0)`           | 侧栏选中/hover 背景   |
+| `--color-muted`              | `oklch(0.269 0 0)`          |                       |
+| `--color-muted-foreground`   | `oklch(0.708 0 0)`          |                       |
+| `--color-border`             | `oklch(1 0 0 / 10%)`        |                       |
+| `--color-border-subtle`      | `oklch(1 0 0 / 6%)`         |                       |
+| `--color-primary`            | `oklch(0.922 0 0)`          | ≈ #e5e5e5（用户主色） |
+| `--color-primary-foreground` | `oklch(0.205 0 0)`          |                       |
+| `--color-primary-muted`      | `oklch(0.922 0 0 / 0.12)`   |                       |
+| `--color-success`            | `oklch(0.63 0.17 155)`      | 深底可读绿            |
+| `--color-warning`            | `oklch(0.8 0.15 85)`        | 深底可读琥珀          |
+| `--color-destructive`        | `oklch(0.704 0.191 22.216)` |                       |
+| `--color-info`               | `oklch(0.7 0.12 240)`       |                       |
 
 配套改动：
 
-- `:root { color-scheme: light }`（保证 `light-dark()` 取 light 分支，diff 区域 github-light 白底）；
-- 深色硬编码样式逐一适配：annotation-card 四态（浅色底+同色系边框）、`rw-*`（卡片浅底、琥珀左边条改深琥珀）、`file-toolbar`（白色半透明+模糊保留）、`comment-progress`（track 浅灰、绿/黄/灰段加深）、scrollbar（浅灰）、noise overlay（opacity 降至 0.012 或移除）、`chat-md`/`rw-text` 代码块（浅灰底深字）；
-- `pulse-dot`/`annotation-flash`/`rw-switch` 等 oklch 琥珀色改为新 primary/语义色变量。
+- `:root { color-scheme: dark }`（保证 `light-dark()` 取 dark 分支，diff 区域 github-dark 黑底高亮）；
+- 深色硬编码样式逐一适配：annotation-card 四态（恢复深色信息蓝紫/人工蓝灰/AI 琥珀/接受绿/拒绝暗灰）、`rw-*`（琥珀左边条 + 暖炭底恢复）、`file-toolbar`（深色半透明渐变 + blur）、`comment-progress`（深灰 track、亮绿/琥珀/灰段）、scrollbar（深灰）、noise overlay 移除、`chat-md`/`rw-text` 代码块（深底白字）；
+- `pulse-dot`/active 序号光晕改白色光晕（dark 下 primary 白）；
+- hover 类：`hover:bg-black/10` → `hover:bg-white/10`（删除评论等）。
 
 ### 13.2 文案词表（W-2）
 
@@ -551,3 +554,13 @@ T3 已验证 AC：AC-2.1（单页场景）、AC-2.2、AC-2.3（4 文件全量）
 | AC-W9 | 代码完成，待用户核对                         | 齿轮（Settings2）位于评审标题行右侧；手写 popover（click-outside/Esc 关闭）含"长行自动换行"开关与 Split/Unified 切换；localStorage key 不变；侧栏顶部原 Wrap/Split/Unified 按钮组移除                                                       | 2026-11-18 |
 
 回归验证：`vp test` 11 文件 108 用例全绿；`npm run build:web` 通过。提交序列：73d90ff（T5）/ 5dcfd44（T6）/ c1fbd4d（T7）/ c2b569f（T8）/ 14040fc（T9），一任务一 commit。
+
+### 16.1 T10：浏览器验收修复（用户反馈 2026-11-18）
+
+用户浏览器核对后反馈 3 个问题，全部修复：
+
+| 反馈                                                                  | 修复                                                                                                                                                                                                                                                      | 状态               |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| "评审 x 个 patch"分两行，要求一行                                     | 侧栏头部 h1 内合并：`评审 <span>{N} 个 patch</span>`，去 p 副文本                                                                                                                                                                                         | 已修复             |
+| 设置 popover 太小；对比视图两行；radio 内英文                         | popover `w-56` → `w-80`；"对比视图"label 与按钮组同行（flex justify-between）；Split → **分栏**、Unified → **合并**                                                                                                                                       | 已修复             |
+| 主题理解反转：用户要深色背景 + 白色主色（#e5e5e5），T6 做成了白底黑字 | `@theme` 全量换 shadcn neutral **dark**（背景 oklch(0.145 0 0)、primary oklch(0.922 0 0)≈#e5e5e5）；`color-scheme: dark`；annotation 四态/rw-\*/file-toolbar/comment-progress/scrollbar/chat-md 等深色硬编码样式全部恢复深色基调；序号光晕/hover 白色适配 | 已修复，待用户复核 |

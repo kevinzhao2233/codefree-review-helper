@@ -1250,10 +1250,10 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
           <div className="min-w-0">
             <h1 className="whitespace-nowrap font-[family-name:var(--font-mono)] text-[11px] font-medium tracking-[0.2em] text-muted-foreground">
               评审
+              <span className="ml-2 tracking-[0.05em] text-muted-foreground/50">
+                {patches.length} 个 patch
+              </span>
             </h1>
-            <p className="mt-0.5 whitespace-nowrap font-[family-name:var(--font-mono)] text-xs text-muted-foreground/50">
-              {patches.length} 个 patch
-            </p>
           </div>
           <SettingsPopover
             wrap={wrap}
@@ -1308,7 +1308,7 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
                       className={cn(
                         "flex size-5 items-center justify-center rounded-full font-[family-name:var(--font-mono)] text-[10px] font-semibold transition-all duration-150",
                         isActive
-                          ? "bg-primary text-primary-foreground shadow-[0_0_8px_oklch(0.205_0_0/0.25)]"
+                          ? "bg-primary text-primary-foreground shadow-[0_0_8px_oklch(0.922_0_0/0.25)]"
                           : "border border-border bg-card text-muted-foreground group-hover:border-foreground/20 group-hover:text-foreground/70",
                       )}
                     >
@@ -1458,11 +1458,11 @@ function SettingsPopover({
         <Settings2 className="size-3.5" />
       </button>
       {open && (
-        <div className="absolute right-0 top-9 z-50 w-56 rounded-md border border-border bg-popover p-3 text-popover-foreground shadow-[0_4px_16px_oklch(0/0/0/0.08)]">
+        <div className="absolute right-0 top-9 z-50 w-80 rounded-md border border-border bg-popover p-3.5 text-popover-foreground shadow-[0_4px_16px_oklch(0/0/0/0.4)]">
           <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
             视图设置
           </div>
-          <label className="mt-3 flex cursor-pointer items-center justify-between text-xs">
+          <label className="mt-3.5 flex cursor-pointer items-center justify-between text-xs">
             长行自动换行
             <input
               type="checkbox"
@@ -1471,34 +1471,36 @@ function SettingsPopover({
               className="size-3.5"
             />
           </label>
-          <div className="mt-3 text-xs">对比视图</div>
-          <div className="mt-1.5 inline-flex rounded-md border border-border bg-background/70 p-1">
-            <button
-              onClick={() => onDiffStyleChange("split")}
-              className={cn(
-                "flex items-center gap-1.5 rounded px-2.5 py-1 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider transition-colors",
-                diffStyle === "split"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-surface hover:text-foreground",
-              )}
-              title="分栏对比视图"
-            >
-              <Columns2 className="size-3" />
-              Split
-            </button>
-            <button
-              onClick={() => onDiffStyleChange("unified")}
-              className={cn(
-                "flex items-center gap-1.5 rounded px-2.5 py-1 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider transition-colors",
-                diffStyle === "unified"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-surface hover:text-foreground",
-              )}
-              title="合并对比视图"
-            >
-              <Rows3 className="size-3" />
-              Unified
-            </button>
+          <div className="mt-3.5 flex items-center justify-between gap-3 text-xs">
+            <span>对比视图</span>
+            <div className="inline-flex rounded-md border border-border bg-background/70 p-1">
+              <button
+                onClick={() => onDiffStyleChange("split")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded px-3 py-1 text-[11px] transition-colors",
+                  diffStyle === "split"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-surface hover:text-foreground",
+                )}
+                title="左右分栏对比"
+              >
+                <Columns2 className="size-3" />
+                分栏
+              </button>
+              <button
+                onClick={() => onDiffStyleChange("unified")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded px-3 py-1 text-[11px] transition-colors",
+                  diffStyle === "unified"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-surface hover:text-foreground",
+                )}
+                title="上下合并对比"
+              >
+                <Rows3 className="size-3" />
+                合并
+              </button>
+            </div>
           </div>
         </div>
       )}
