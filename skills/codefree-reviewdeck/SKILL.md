@@ -87,7 +87,8 @@ node <reviewdeck-dist>/reviewdeck.mjs index review.diff -o pr.index.txt
    - 默认 `deps-first` 排序；用户指定 `tests/docs-first` 时遵循；
    - 每个编号恰好归入一组，连续编号用区间写法 `"0-23"`；
    - 每组 `description` 说明"这组为何在此、评审时看什么"；
-   - `draftComments` 可选：仅限 diff 能支撑的具体问题，锚定同组内的一个 `change`。
+   - `draftComments` 可选：仅限 diff 能支撑的具体问题，锚定同组内的一个 `change`；
+   - **输出语言**：`description` 与 `draftComments[].body` 用简体中文（代码标识符、命令、API 名等专有名词保持原文）。
 
 ```json
 {

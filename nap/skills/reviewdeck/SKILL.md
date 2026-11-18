@@ -52,6 +52,7 @@ Order the changes for a reviewer, following [references/split.md](references/spl
 - Keep tightly related changes together; split when it makes the sequence clearer, not to hit a number. A small PR can be one group.
 - Each `description` tells the reviewer why this group comes here and what to look for, not which files it touches.
 - `draftComments` are optional: add one only for a concrete, reviewer-worthy concern you can support from the diff, anchored to a `change` in the same group. The reviewer accepts or rejects each.
+- **Output language**: write `description`, `draftComments[].body` and `rewrites` in Simplified Chinese (keep code identifiers, commands, API names in their original form).
 
 ### Rewrites (experimental, only when asked)
 
@@ -77,11 +78,9 @@ Call `create_review` with the `fileId` and the split:
   "splitMeta": {
     "groups": [
       {
-        "description": "Add the version field the upgrade flow reads, before anything uses it",
+        "description": "先加升级流程要读取的 version 字段，在任何使用方之前",
         "changes": ["0-4"],
-        "draftComments": [
-          { "change": 3, "body": "This default changes behaviour for existing configs." }
-        ]
+        "draftComments": [{ "change": 3, "body": "这个默认值会改变存量配置的行为，需要确认。" }]
       }
     ]
   }

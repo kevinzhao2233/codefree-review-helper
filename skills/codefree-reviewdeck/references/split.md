@@ -36,6 +36,10 @@ Use these heuristics:
 - Prefer `tests/docs-first` only when the tests or docs materially clarify expected behavior or review intent.
 - Fall back to `deps-first` when tests are trivial, purely mechanical, or depend on too much unseen implementation detail.
 
+## Output language
+
+Write `description` and `draftComments[].body` in Simplified Chinese. Keep code identifiers, commands, API names, and other technical terms in their original form.
+
 ## Output format
 
 Output a single JSON object with no markdown fences and no extra commentary:
@@ -44,17 +48,17 @@ Output a single JSON object with no markdown fences and no extra commentary:
 {
   "groups": [
     {
-      "description": "Add version selector plumbing so later upgrade flows have a stable input",
+      "description": "加入版本选择的底层支持，让后续升级流程有稳定输入",
       "changes": ["0-2", 5, 6],
       "draftComments": [
         {
           "change": 6,
-          "body": "Check whether the new selector can drift out of sync when no compatible versions exist."
+          "body": "当不存在兼容版本时，新选择器是否会与实际状态脱节，需要确认。"
         }
       ]
     },
     {
-      "description": "Cover the upgrade path with e2e checks after the UI flow is in place",
+      "description": "在 UI 流程就位后，用 e2e 检查覆盖升级路径",
       "changes": ["3-4", "7-9"]
     }
   ]
@@ -90,16 +94,16 @@ Avoid descriptions that are only:
 
 Examples that usually work well:
 
-- `Add version selection plumbing so the upgrade flow has a stable entry point`
-- `Show current version and status before wiring upgrade actions`
-- `Isolate the upgrade dialog and action handling as the main behavior change`
-- `Add e2e coverage once the upgrade flow is in place`
+- `加入版本选择的底层支持，让升级流程有稳定入口`
+- `在接入升级操作前，先展示当前版本与状态`
+- `把升级对话框与操作处理隔离为本次的主要行为变更`
+- `升级流程就位后补充 e2e 覆盖`
 
 Examples that are often too vague:
 
-- `version selector`
-- `status display`
-- `upgrade dialog`
+- `版本选择器`
+- `状态展示`
+- `升级对话框`
 - `e2e`
 
 ## Draft comment guidance
@@ -120,11 +124,11 @@ Avoid draft comments that are only:
 
 Examples that usually work well:
 
-- `Potential regression: this update path bypasses the sanitizing transform used by the normal edit flow.`
-- `This selector keeps the old version when no compatible options exist, so the form may submit an unavailable version.`
+- `潜在回归：这条更新路径绕过了常规编辑流程使用的净化转换。`
+- `当没有兼容选项时，该选择器保留旧版本，表单可能提交一个不可用的版本。`
 
 Examples that are often too weak:
 
-- `Adds selector logic`
-- `Looks risky`
-- `Need review`
+- `加了选择器逻辑`
+- `看起来有风险`
+- `需要评审`

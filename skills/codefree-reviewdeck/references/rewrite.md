@@ -9,6 +9,10 @@ Rewrite blocks fold a few diff lines into one equivalent, more focused descripti
 
 This file is the default rewrite prompt. If the user supplies their own rewrite prompt or style, follow it instead of this file.
 
+## Output language
+
+Write rewrites and `title`s in Simplified Chinese, as plain prose. Keep code identifiers, commands, API names, and other technical terms in their original form.
+
 ## Core rule: equivalent, not summarized
 
 A rewrite is a change of notation, not a summary. A reviewer who reads only the rewrite must be able to reach the same verdict as one who reads the code.
