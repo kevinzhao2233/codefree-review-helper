@@ -538,14 +538,16 @@ T3 已验证 AC：AC-2.1（单页场景）、AC-2.2、AC-2.3（4 文件全量）
 
 ## 16. 验收记录（T9 结束后回填）
 
-| AC    | 结果   | 证据 | 日期 |
-| ----- | ------ | ---- | ---- |
-| AC-W1 | 待验收 |      |      |
-| AC-W2 | 待验收 |      |      |
-| AC-W3 | 待验收 |      |      |
-| AC-W4 | 待验收 |      |      |
-| AC-W5 | 待验收 |      |      |
-| AC-W6 | 待验收 |      |      |
-| AC-W7 | 待验收 |      |      |
-| AC-W8 | 待验收 |      |      |
-| AC-W9 | 待验收 |      |      |
+| AC    | 结果                                         | 证据                                                                                                                                                                                                                                        | 日期       |
+| ----- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| AC-W1 | 代码与构建产物验证通过，待用户浏览器最终核对 | `index.html`：`lang="zh-CN"`、无 `dark` class、title"reviewdeck 评审"；`build:web` 后 dist 生效                                                                                                                                             | 2026-11-18 |
+| AC-W2 | 代码完成，待用户核对                         | §13.2 词表落地（ReviewDeck/annotations/RewriteCard/AppShell/ChatPanel/render.ts，6 文件 96+/105-）；构建通过                                                                                                                                | 2026-11-18 |
+| AC-W3 | 代码完成，待用户核对                         | 色板换 shadcn neutral light（border oklch(0.922 0 0)）；`:root{color-scheme:light}`；深色硬编码样式全部适配（annotation 四态/rw-\*/file-toolbar/comment-progress/scrollbar）；noise overlay 移除；grep 无深色残留                           | 2026-11-18 |
+| AC-W4 | 指令审查通过，实际输出待下次真实评审验证     | 4 处中文输出要求落地（split.md §Output language、rewrite.md §Output language、codefree SKILL.md §4、nap SKILL.md Split it 节）；示例 JSON 中文化                                                                                            | 2026-11-18 |
+| AC-W5 | 代码完成，待用户核对                         | 列表项 `block truncate` → `block break-words`，外层 button 加 `title={patch.description}`                                                                                                                                                   | 2026-11-18 |
+| AC-W6 | 代码完成，待用户核对                         | 进度图例统一为"已接受 N（绿）/待定 N（黄）/已拒绝 N（灰）"，chip 带 title 语义说明（将随提交发送/不发送）；**词表修正**：原"已包含/已省略"统一为与草稿徽章一致的"已接受/已拒绝"（included=accepted、omitted=rejected 的直接映射，语义更准） | 2026-11-18 |
+| AC-W7 | 代码完成，待用户核对                         | 评论表单提示 `⌘↵ 或 Ctrl+↵ 提交`（annotations.tsx）；ChatPanel placeholder `⌘↵ 或 Ctrl+↵ 发送`；j/k 未实现不加提示（§12.2）                                                                                                                 | 2026-11-18 |
+| AC-W8 | 代码完成，待用户核对                         | 评审标题与 patch 计数均加 `whitespace-nowrap`                                                                                                                                                                                               | 2026-11-18 |
+| AC-W9 | 代码完成，待用户核对                         | 齿轮（Settings2）位于评审标题行右侧；手写 popover（click-outside/Esc 关闭）含"长行自动换行"开关与 Split/Unified 切换；localStorage key 不变；侧栏顶部原 Wrap/Split/Unified 按钮组移除                                                       | 2026-11-18 |
+
+回归验证：`vp test` 11 文件 108 用例全绿；`npm run build:web` 通过。提交序列：73d90ff（T5）/ 5dcfd44（T6）/ c1fbd4d（T7）/ c2b569f（T8）/ 14040fc（T9），一任务一 commit。
