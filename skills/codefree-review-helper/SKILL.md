@@ -105,16 +105,55 @@ node <codefree-review-helper-dist>/codefree-review-helper.mjs index review.diff 
 
 ## 5. split 验证与 render
 
+### 5.0 工作目录硬性约束（先于一切）
+
+评审工作目录必须位于系统临时目录（PowerShell `$env:TEMP` / bash `mktemp -d` 产物），**禁止在用户仓库或项目目录内创建**——评审产物（diff/split/子补丁/submission.json）不得进入 git 跟踪范围。发现工作目录在仓库内时，先迁移到临时目录再继续。
+
+### 5.1 split
+
 ```bash
 node <codefree-review-helper-dist>/codefree-review-helper.mjs split review.diff split.json -o output/
-node <codefree-review-helper-dist>/codefree-review-helper.mjs render output/
 ```
 
-- `split` 自带组合验证（子 patch 按序应用 == 原 diff）。失败时按报错修正 `split.json` 重试；
-- `render` 会打开浏览器评审界面并**阻塞等待用户提交**；提交后 stdout 输出 submission JSON：
-  - `comments[]`：最终评论（用户自己的 + 接受的草稿），字段 `file / line / side / body`；
-  - `draftComments[]`：各草稿的 accepted / rejected / pending 状态。
-- render 期间把评审链接（终端打印的 URL）转告用户；**不要代替用户提交**。
+`split` 自带组合验证（子 patch 按序应用 == 原 diff）。失败时按报错修正 `split.json` 重试（≤2 次）。
+
+### 5.2 render：必须后台启动，勿前台等待
+
+`render` 无限期阻塞等待人工评审，前台跑会被会话超时杀掉、服务随之死亡。后台启动并重定向留存：
+
+```powershell
+# PowerShell
+Start-Process -FilePath node -ArgumentList "<codefree-review-helper-dist>/codefree-review-helper.mjs","render","<output-dir>" -WindowStyle Hidden -RedirectStandardOutput render-stdout.log -RedirectStandardError render-stderr.log -PassThru
+```
+
+```bash
+# bash
+nohup node <codefree-review-helper-dist>/codefree-review-helper.mjs render <output-dir> > render-stdout.log 2> render-stderr.log &
+```
+
+- 目录模式下提交结果写入 `<output-dir>/submission.json`——这是本流程的核心交接通道；
+- 启动后把评审链接（stderr 里打印的 URL）转告用户；**不要代替用户提交**；
+- 端口冲突时用 `-p <端口>` 换端口。
+
+### 5.3 轮询 submission.json
+
+- **每次工具调用顺带检查** `<output-dir>/submission.json` 是否出现；
+- 用户说"已提交"时，也**先查该文件**再继续，以文件为准；
+- 文件出现 → 读 JSON → 进入 §6 回帖。**回帖完成前不要删除该文件**（幂等重跑的依据）。
+
+submission JSON 结构：
+
+- `comments[]`：最终评论（用户自己的 + 接受的草稿），字段 `file / line / side / body`；
+- `draftComments[]`：各草稿的 accepted / rejected / pending 状态。
+
+### 5.4 评审提交失败 / 服务停止
+
+用户报"提交失败"、或界面显示"评审提交失败"提示时，按以下顺序重启：
+
+1. **先删旧 submission.json**（防重启后读到旧评审）；
+2. 确认旧 render 进程已退出、端口未被占用（`Get-Process node` / `ps`），或直接用 `-p` 换端口；
+3. 按 §5.2 重新后台启动；
+4. 请用户在新评审界面重新提交（评论需重填——界面停留在失败前的状态时可直接点"重试"），回到 §5.3 继续轮询。
 
 ## 6. 评审提交后：回帖
 
