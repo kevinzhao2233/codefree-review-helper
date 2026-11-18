@@ -660,14 +660,21 @@ frontmatter `description` 同步注明"仅限 CodeFree 环境"。
 | AC-17.6 | 端到端冒烟：`index → split → render` 本地起界面正常（复用 T4 测试数据）                                                                       |
 | AC-17.7 | 明确排除项：不打 tag、不 `npm publish`、不改 npm registry 上的包                                                                              |
 
-### 17.6 验收记录（回填处）
+### 17.6 验收记录
 
-| AC      | 结果   | 证据 | 日期 |
-| ------- | ------ | ---- | ---- |
-| AC-17.1 | 待验收 |      |      |
-| AC-17.2 | 待验收 |      |      |
-| AC-17.3 | 待验收 |      |      |
-| AC-17.4 | 待验收 |      |      |
-| AC-17.5 | 待验收 |      |      |
-| AC-17.6 | 待验收 |      |      |
-| AC-17.7 | 待验收 |      |      |
+| AC      | 结果     | 证据                                                                                                                                                                                                                                                                  | 日期       |
+| ------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| AC-17.1 | **通过** | `nap/`、`src/service/`、`src/web/app/`、`Dockerfile`、`skills/reviewdeck/` 均不存在；`main.ts` 无 serve 分支                                                                                                                                                          | 2026-11-18 |
+| AC-17.2 | **通过** | `vp test` 6 文件 81 用例全绿（原 108，service 27 用例随目录删除）；`npm run lint` 全链通过（vp check + knip + depcruise，50 modules 无违规；仅剩 1 个预存在 warning `RewriteCard.tsx` 参数 `_` 未使用）；12 个 service/NAP 依赖已从 package.json 移除                 | 2026-11-18 |
+| AC-17.3 | **通过** | `git grep -i reviewdeck` 仅剩允许清单：`ReviewDeck` 组件名与 import（app.tsx/lib-entry.ts/ReviewDeck.tsx）、`reviewdeck-ui.js` 冻结项（package.json exports、vite.config.lib.ts）、AGENTS.md"原名 reviewdeck"历史说明、package.json homepage/repo URL（仓库迁移未定） | 2026-11-18 |
+| AC-17.4 | **通过** | SKILL.md frontmatter description 首句"仅限 CodeFree 环境使用"；正文标题下引用块"环境限制：本 skill 仅可在 CodeFree 中使用……直接告知用户并停止，不执行任何步骤"                                                                                                        | 2026-11-18 |
+| AC-17.5 | **通过** | README.md 全中文重写（含 CodeFree-only 声明、本地构建安装、三命令流程、开发命令；无 NAP/`npx skills add` 内容）；AGENTS.md 标题与简介更新、架构图删除 nap/service 层、release 段注明 npm 发布暂停与冻结项                                                             | 2026-11-18 |
+| AC-17.6 | **通过** | 端到端冒烟：`index`（440 条变更）→ `split`（5 个子补丁，"校验通过：子补丁按序组合 == 原 diff"）→ `render`（服务启动 http://localhost:3847，HTTP 200 探活，"等待评审提交…"），中文提示正常                                                                             | 2026-11-18 |
+| AC-17.7 | **通过** | 未 bump 版本、未打 tag、未 npm publish、未动 npm registry 上的 `reviewdeck` 包                                                                                                                                                                                        | 2026-11-18 |
+
+补充记录：
+
+- **marker 前缀变更**：回帖幂等 marker 由 `<!-- reviewdeck:xxx -->` 改为 `<!-- codefree-review-helper:xxx -->`；T4 期间在 fzp-next 测试 MR 已发的 2 条旧前缀评论将无法被新前缀识别去重（测试数据，影响可忽略）。
+- **localStorage key 变更**：评审界面偏好 key 由 `reviewdeck:review:*` 改为 `codefree-review-helper:review:*`；已存的本地图例/换行等偏好会回到默认值（仅本地界面偏好，无功能影响）。
+- **build:cli Windows 兼容修复**：原 `--banner:js='#!/usr/bin/env node'` 单引号在 Windows cmd 下被拆为多个参数导致 esbuild 报错（该脚本在 Windows 上一直无法执行，此前 dist 产物来自历史构建）；改为跨平台双引号转义后 Windows 构建通过。
+- 提交序列：e4dc9c9（方案）→ 0082a04（T11，-7423 行）→ 78e320b（T12）→ aa22955（T13）→ 7917062（T14），一任务一 commit。
