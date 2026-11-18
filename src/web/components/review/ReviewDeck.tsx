@@ -223,7 +223,7 @@ function CommentStatusCard({
   if (compact) {
     return (
       <div
-        title={`${title}: ${counts.included} included, ${counts.pending} pending, ${counts.omitted} omitted`}
+        title={`${title}：已包含 ${counts.included}，待定 ${counts.pending}，已省略 ${counts.omitted}`}
       >
         <div className="comment-progress-track overflow-hidden rounded-full">
           {counts.totalDrafts > 0 ? (
@@ -257,9 +257,7 @@ function CommentStatusCard({
 
   if (minimal) {
     return (
-      <div
-        title={`${counts.included} included, ${counts.pending} pending, ${counts.omitted} omitted`}
-      >
+      <div title={`已包含 ${counts.included}，待定 ${counts.pending}，已省略 ${counts.omitted}`}>
         <div className="comment-progress-track overflow-hidden rounded-full">
           {counts.totalDrafts > 0 ? (
             <>
@@ -309,7 +307,7 @@ function CommentStatusCard({
       <div className="flex items-center justify-between gap-3">
         <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{title}</span>
         <span className="font-[family-name:var(--font-mono)] text-[11px] text-muted-foreground">
-          {counts.totalDrafts} drafts
+          {counts.totalDrafts} 条草稿
         </span>
       </div>
       <div className="comment-progress-track mt-2 overflow-hidden rounded-full">
@@ -341,15 +339,15 @@ function CommentStatusCard({
       <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
         <span className="comment-progress-chip">
           <span className="comment-progress-dot comment-progress-dot-included" />
-          {counts.included} included
+          {counts.included} 已包含
         </span>
         <span className="comment-progress-chip">
           <span className="comment-progress-dot comment-progress-dot-pending" />
-          {counts.pending} pending
+          {counts.pending} 待定
         </span>
         <span className="comment-progress-chip">
           <span className="comment-progress-dot comment-progress-dot-omitted" />
-          {counts.omitted} omitted
+          {counts.omitted} 已省略
         </span>
       </div>
     </div>
@@ -640,7 +638,7 @@ function FileDiffView({
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-muted-foreground bg-transparent",
             )}
-            title={viewed ? "Mark as unviewed" : "Mark as viewed"}
+            title={viewed ? "标记为未读" : "标记为已读"}
           >
             {viewed && <Check className="size-3" strokeWidth={3} />}
           </button>
@@ -787,13 +785,13 @@ function SubPatchView({
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Badge variant="outline" size="sm">
                 <Bot className="mr-1 size-3" />
-                {draftCounts.accepted} accepted
+                {draftCounts.accepted} 已接受
               </Badge>
               <Badge variant="outline" size="sm">
-                {draftCounts.pending} pending
+                {draftCounts.pending} 待定
               </Badge>
               <Badge variant="outline" size="sm">
-                {draftCounts.rejected} rejected
+                {draftCounts.rejected} 已拒绝
               </Badge>
               {draftCounts.pending > 0 && (
                 <>
@@ -808,7 +806,7 @@ function SubPatchView({
                     }}
                   >
                     <UserCheck className="size-3" />
-                    Accept Pending
+                    接受待定
                   </Button>
                   <Button
                     size="sm"
@@ -821,7 +819,7 @@ function SubPatchView({
                     }}
                   >
                     <Ban className="size-3" />
-                    Reject Pending
+                    拒绝待定
                   </Button>
                 </>
               )}
@@ -857,22 +855,18 @@ function SubPatchView({
             <button
               onClick={() => onSetRewritesExpanded(blockIds, !allExpanded)}
               className="flex items-center gap-1.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
-              title={
-                allExpanded
-                  ? "Show every rewrite in place of its code"
-                  : "Show the code of every rewrite"
-              }
+              title={allExpanded ? "全部收起改写，恢复显示原代码" : "展开显示全部改写的原代码"}
             >
               <Code2 className="size-3" />
-              {allExpanded ? "Cover all" : "Reveal all"}
+              {allExpanded ? "全部收起" : "全部展开"}
             </button>
           )}
           {hasRewrites && (
             <span
               className="font-[family-name:var(--font-mono)] text-[11px] text-muted-foreground"
-              title={`Rewrites cover ${coverage.covered} of ${coverage.total} changed lines`}
+              title={`改写覆盖 ${coverage.total} 行变更代码中的 ${coverage.covered} 行`}
             >
-              <span className="text-foreground">{toRead}</span>/{coverage.total} lines to read
+              <span className="text-foreground">{toRead}</span>/{coverage.total} 行待读
             </span>
           )}
           <span className="flex items-center gap-1.5 font-[family-name:var(--font-mono)] text-[11px] text-muted-foreground">
@@ -1228,11 +1222,10 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
         </div>
         <div className="animate-fade-in-up text-center" style={{ animationDelay: "80ms" }}>
           <p className="font-[family-name:var(--font-mono)] text-lg font-semibold tracking-tight">
-            Review submitted
+            评审已提交
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {submittedCount} final comment{submittedCount !== 1 ? "s" : ""} sent. You can close this
-            tab.
+            已发送 {submittedCount} 条最终评论，可以关闭此页签。
           </p>
         </div>
       </div>
@@ -1244,7 +1237,7 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
       <div className="flex h-full flex-col items-center justify-center gap-3 bg-background text-foreground">
         <div className="animate-pulse-dot size-2 rounded-full bg-primary" />
         <span className="font-[family-name:var(--font-mono)] text-xs tracking-widest text-muted-foreground">
-          LOADING
+          加载中…
         </span>
       </div>
     );
@@ -1256,10 +1249,10 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
         <div className="flex items-center justify-between px-4 pb-3 pt-5">
           <div>
             <h1 className="font-[family-name:var(--font-mono)] text-[11px] font-medium tracking-[0.2em] text-muted-foreground">
-              REVIEW
+              评审
             </h1>
             <p className="mt-0.5 font-[family-name:var(--font-mono)] text-xs text-muted-foreground/50">
-              {patches.length} patches
+              {patches.length} 个 patch
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
@@ -1271,7 +1264,7 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
                   ? "bg-primary text-primary-foreground"
                   : "bg-background/70 text-muted-foreground hover:bg-surface hover:text-foreground",
               )}
-              title={wrap ? "Disable line wrap" : "Wrap long lines"}
+              title={wrap ? "关闭长行自动换行" : "长行自动换行"}
             >
               <WrapText className="size-3" />
               Wrap
@@ -1285,7 +1278,7 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-surface hover:text-foreground",
                 )}
-                title="Use split diff view"
+                title="分栏对比视图"
               >
                 <Columns2 className="size-3" />
                 Split
@@ -1298,7 +1291,7 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-surface hover:text-foreground",
                 )}
-                title="Use unified diff view"
+                title="合并对比视图"
               >
                 <Rows3 className="size-3" />
                 Unified
@@ -1310,7 +1303,7 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
         {globalCommentCounts.totalDrafts > 0 && (
           <div className="px-3 pb-3">
             <div className="rounded-md border border-border/70 bg-background/60 p-3">
-              <CommentStatusCard title="Whole review" counts={globalCommentCounts} minimal />
+              <CommentStatusCard title="整体评审" counts={globalCommentCounts} minimal />
             </div>
           </div>
         )}
@@ -1376,11 +1369,11 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
                   {(patch.rewrites?.length ?? 0) > 0 && (
                     <span
                       className="mt-1 mr-2 inline-flex items-center gap-1 font-[family-name:var(--font-mono)] text-[10px] text-primary/70"
-                      title={`${patch.rewrites!.length} rewrite blocks cover ${coverageBySub.get(patch.index)!.covered} of ${coverageBySub.get(patch.index)!.total} changed lines`}
+                      title={`${patch.rewrites!.length} 个改写块覆盖 ${coverageBySub.get(patch.index)!.total} 行变更中的 ${coverageBySub.get(patch.index)!.covered} 行`}
                     >
                       <BookOpenText className="size-2.5" />
                       {coverageBySub.get(patch.index)!.covered}/
-                      {coverageBySub.get(patch.index)!.total} rewritten
+                      {coverageBySub.get(patch.index)!.total} 行已改写
                     </span>
                   )}
                   {(subComments.length > 0 || subDraftComments.length > 0) && (
@@ -1391,15 +1384,15 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
                           {commentCounts.final}
                         </span>
                       )}
-                      {commentCounts.human > 0 && <span>{commentCounts.human} human</span>}
-                      {commentCounts.included > 0 && <span>{commentCounts.included} included</span>}
-                      {commentCounts.pending > 0 && <span>{commentCounts.pending} pending</span>}
-                      {commentCounts.omitted > 0 && <span>{commentCounts.omitted} omitted</span>}
+                      {commentCounts.human > 0 && <span>{commentCounts.human} 条人工</span>}
+                      {commentCounts.included > 0 && <span>已包含 {commentCounts.included}</span>}
+                      {commentCounts.pending > 0 && <span>待定 {commentCounts.pending}</span>}
+                      {commentCounts.omitted > 0 && <span>已省略 {commentCounts.omitted}</span>}
                     </span>
                   )}
                   {isActive && activeCommentCounts.totalDrafts > 0 && (
                     <div className="mt-3 rounded-md border border-border/60 bg-background/55 p-2.5">
-                      <CommentStatusCard title="This patch" counts={activeCommentCounts} compact />
+                      <CommentStatusCard title="当前 patch" counts={activeCommentCounts} compact />
                     </div>
                   )}
                 </div>
@@ -1411,15 +1404,13 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
         <div className="border-t border-border p-3">
           <Button variant="default" className="w-full gap-2" onClick={handleSubmit}>
             <ArrowUp className="size-3.5" />
-            <span className="font-[family-name:var(--font-mono)] text-xs tracking-wide">
-              Submit
-            </span>
+            <span className="font-[family-name:var(--font-mono)] text-xs tracking-wide">提交</span>
             <Badge variant="default" size="sm">
               {submission.comments.length}
             </Badge>
           </Button>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            Submit sends accepted agent drafts plus your own comments. Rejected drafts stay out.
+            提交会发送已接受的 AI 草稿和你的评论；被拒绝的草稿不会发送。
           </p>
         </div>
       </nav>
@@ -1482,7 +1473,7 @@ function CommentNavigatorRail({
     <div className="flex items-center justify-between border-y border-border/60 bg-background/40 px-3 py-2">
       <span className="flex items-center gap-1.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
         <ListTree className="size-3" />
-        Comments
+        评论
       </span>
       <div className="flex items-center gap-1.5">
         <span className="font-[family-name:var(--font-mono)] text-[10px] text-muted-foreground">
@@ -1492,14 +1483,14 @@ function CommentNavigatorRail({
           <button
             onClick={onPrev}
             className="rounded p-0.5 transition-colors hover:bg-primary-foreground/15"
-            title="Previous comment"
+            title="上一条评论"
           >
             <ChevronUp className="size-3.5" />
           </button>
           <button
             onClick={onNext}
             className="rounded p-0.5 transition-colors hover:bg-primary-foreground/15"
-            title="Next comment"
+            title="下一条评论"
           >
             <ChevronDown className="size-3.5" />
           </button>

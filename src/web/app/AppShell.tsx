@@ -9,10 +9,10 @@ const REVIEWS_POLL_MS = 8000;
 
 function timeAgo(iso: string): string {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
+  if (s < 60) return "刚刚";
+  if (s < 3600) return `${Math.floor(s / 60)} 分钟前`;
+  if (s < 86400) return `${Math.floor(s / 3600)} 小时前`;
+  return `${Math.floor(s / 86400)} 天前`;
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -34,9 +34,9 @@ const STATUS_STYLE: Record<ReviewSummary["status"], string> = {
 function Reviews({ reviews }: { reviews: ReviewSummary[] | null }) {
   return (
     <section className="flex flex-col gap-3">
-      <SectionLabel>Reviews</SectionLabel>
+      <SectionLabel>评审列表</SectionLabel>
       {reviews?.length === 0 && (
-        <p className="text-xs text-muted-foreground">Reviews the agent prepares show up here.</p>
+        <p className="text-xs text-muted-foreground">agent 准备的评审会显示在这里。</p>
       )}
       <ul className="flex flex-col gap-1.5">
         {reviews?.map((r) => (
@@ -60,9 +60,8 @@ function Reviews({ reviews }: { reviews: ReviewSummary[] | null }) {
                 <ArrowUpRight className="size-3.5 text-muted-foreground group-hover:text-foreground" />
               </div>
               <div className="font-[family-name:var(--font-mono)] text-[10px] text-muted-foreground">
-                {r.patchCount} groups
-                {r.status === "completed" && ` · ${r.commentCount} comments`} ·{" "}
-                {timeAgo(r.createdAt)}
+                {r.patchCount} 个分组
+                {r.status === "completed" && ` · ${r.commentCount} 条评论`} · {timeAgo(r.createdAt)}
               </div>
             </a>
           </li>
@@ -73,8 +72,8 @@ function Reviews({ reviews }: { reviews: ReviewSummary[] | null }) {
 }
 
 const CREDENTIAL_HINT: Record<string, string> = {
-  GITHUB_TOKEN: "Fine-grained PAT: pull requests read & write",
-  GITLAB_TOKEN: "Personal access token with api scope",
+  GITHUB_TOKEN: "细粒度 PAT：pull requests 读写权限",
+  GITLAB_TOKEN: "带 api 权限的个人访问令牌",
 };
 
 function GitAccess() {
@@ -97,10 +96,9 @@ function GitAccess() {
 
   return (
     <section className="flex flex-col gap-3">
-      <SectionLabel>Git access</SectionLabel>
+      <SectionLabel>Git 凭证</SectionLabel>
       <p className="text-xs text-muted-foreground">
-        Your agent reads diffs and posts comments with your own tokens. They are stored on NAP and
-        only reach your workspace.
+        你的 agent 用你自己的令牌读取 diff 并发送评论。令牌存储在 NAP，只进入你的工作区。
       </p>
       {error && <div className="text-xs text-destructive">{error}</div>}
       {creds?.map((c) => (
@@ -109,7 +107,7 @@ function GitAccess() {
             <KeyRound className="size-3 text-muted-foreground" />
             {c.name}
             <span className={c.set ? "text-success" : "text-muted-foreground"}>
-              {c.set ? "set" : "not set"}
+              {c.set ? "已设置" : "未设置"}
             </span>
           </div>
           <div className="flex gap-1.5">
@@ -121,7 +119,7 @@ function GitAccess() {
               className="h-7 min-w-0 flex-1 rounded-md border border-border bg-input px-2 text-xs"
             />
             <Button variant="outline" size="sm" onClick={() => save(c.name)}>
-              {values[c.name] ? "Save" : c.set ? "Clear" : "Save"}
+              {values[c.name] ? "保存" : c.set ? "清除" : "保存"}
             </Button>
           </div>
         </div>
@@ -162,7 +160,7 @@ export function AppShell() {
         <Button
           variant="ghost"
           size="icon"
-          title="Sign out"
+          title="退出登录"
           onClick={() => api.logout().then(() => (window.location.href = "/auth/login"))}
         >
           <LogOut className="size-3.5" />
@@ -174,8 +172,8 @@ export function AppShell() {
             <ChatPanel reviews={reviews ?? []} onTurnComplete={loadReviews} />
           ) : (
             <div className="flex h-full items-center justify-center p-8 text-center text-sm text-muted-foreground">
-              No review agent on this server. Set RD_NAP_URL, RD_NAP_CLIENT_ID and
-              RD_NAP_CLIENT_SECRET to connect it to NAP.
+              此服务器未接入评审 agent。设置 RD_NAP_URL、RD_NAP_CLIENT_ID 与 RD_NAP_CLIENT_SECRET
+              以连接 NAP。
             </div>
           )}
         </main>

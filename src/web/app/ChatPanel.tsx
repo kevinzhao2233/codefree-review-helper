@@ -41,10 +41,10 @@ const CALLBACK_WINDOW_MS = 10 * 60_000;
 
 function timeAgo(iso: string): string {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
+  if (s < 60) return "刚刚";
+  if (s < 3600) return `${Math.floor(s / 60)} 分钟前`;
+  if (s < 86400) return `${Math.floor(s / 3600)} 小时前`;
+  return `${Math.floor(s / 86400)} 天前`;
 }
 
 export function ChatPanel({
@@ -140,8 +140,8 @@ export function ChatPanel({
       {
         name: "with-rewrites",
         type: "struct",
-        description: "Review a PR, with rewrites in place of dense code",
-        content: "Prepare a review of {{pr_url}} with rewrites.",
+        description: "评审 PR，用改写替代密集代码",
+        content: "请对 {{pr_url}} 做带改写的评审准备。",
       },
     ],
   });
@@ -165,7 +165,7 @@ export function ChatPanel({
             value={current ?? ""}
             onChange={(e) => setCurrent(e.currentTarget.value || undefined)}
           >
-            <option value="">New conversation</option>
+            <option value="">新会话</option>
             {chats.map((c) => (
               <option key={c.id} value={c.id}>
                 {(c.preview || c.name || c.id).slice(0, 80)} · {timeAgo(c.lastActiveAt)}
@@ -174,7 +174,7 @@ export function ChatPanel({
           </select>
           <Button variant="outline" size="sm" onClick={() => setCurrent(undefined)}>
             <Plus className="size-3.5" />
-            New
+            新建
           </Button>
         </div>
 
@@ -187,12 +187,11 @@ export function ChatPanel({
             ) : (
               <div className="mt-[12vh] flex flex-col items-center gap-3 text-center">
                 <div className="font-[family-name:var(--font-mono)] text-xs tracking-widest text-primary">
-                  REVIEW AGENT
+                  评审 AGENT
                 </div>
                 <p className="max-w-md text-sm text-muted-foreground">
-                  Paste a GitHub PR or GitLab MR link. The agent reads the diff, splits it into a
-                  review deck and gives you the link. Once you submit the review, it posts your
-                  comments back to the PR.
+                  粘贴 GitHub PR 或 GitLab MR 链接。agent 会读取 diff、切分为评审 deck
+                  并给你链接；你提交评审后，它把你确认的评论发回 PR。
                 </p>
               </div>
             )}
@@ -217,16 +216,16 @@ export function ChatPanel({
                 ) : waiting.length > 0 && !running ? (
                   <span className="flex items-center gap-2 text-muted-foreground">
                     <span className="size-1.5 animate-pulse rounded-full bg-primary" />
-                    Waiting for your review —{" "}
+                    等待你的评审 —{" "}
                     <a
                       href={waiting[0]!.reviewUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="text-primary underline underline-offset-2"
                     >
-                      open it
+                      打开评审
                     </a>
-                    ; the agent picks up when you submit.
+                    ；你提交后 agent 继续。
                   </span>
                 ) : null}
               </div>
@@ -259,7 +258,7 @@ export function ChatPanel({
               sendKey="mod-enter"
               locale="en-US"
               placeholder={
-                current ? "Reply…" : "https://github.com/owner/repo/pull/123  (⌘↵ to send)"
+                current ? "回复…" : "https://github.com/owner/repo/pull/123  (⌘↵ 或 Ctrl+↵ 发送)"
               }
               {...sources}
             />

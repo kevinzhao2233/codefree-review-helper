@@ -23,7 +23,7 @@ export function InlineCommentForm({
         autoFocus
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Leave a comment..."
+        placeholder="写下评论…"
         className="resize-y text-[13px]"
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -38,14 +38,18 @@ export function InlineCommentForm({
           <kbd className="rounded border border-border px-1 py-0.5 font-[family-name:var(--font-mono)] text-[10px]">
             ⌘↵
           </kbd>{" "}
-          to submit
+          或{" "}
+          <kbd className="rounded border border-border px-1 py-0.5 font-[family-name:var(--font-mono)] text-[10px]">
+            Ctrl+↵
+          </kbd>{" "}
+          提交
         </span>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={onCancel}>
-            Cancel
+            取消
           </Button>
           <Button variant="default" size="sm" onClick={() => text.trim() && onSubmit(text.trim())}>
-            Comment
+            评论
           </Button>
         </div>
       </div>
@@ -67,7 +71,7 @@ export function CommentBubble({
       <button
         onClick={onDelete}
         className="annotation-meta mt-0.5 shrink-0 rounded p-1 hover:bg-black/10 hover:text-foreground"
-        title="Delete comment"
+        title="删除评论"
       >
         <X className="size-3" />
       </button>
@@ -83,7 +87,7 @@ export function DraftCommentBubble({
   onSetStatus: (status: AgentDraftCommentDecision["status"]) => void;
 }) {
   const statusLabel =
-    draft.status === "accepted" ? "Accepted" : draft.status === "rejected" ? "Rejected" : "Draft";
+    draft.status === "accepted" ? "已接受" : draft.status === "rejected" ? "已拒绝" : "待定";
   const toneClass =
     draft.status === "accepted"
       ? "annotation-card-agent-accepted"
@@ -100,7 +104,7 @@ export function DraftCommentBubble({
     >
       <div className="annotation-meta flex items-center gap-2 text-[11px] uppercase tracking-wide">
         <Bot className="size-3 shrink-0" />
-        <span>Agent draft</span>
+        <span>AI 草稿</span>
         <Badge variant="outline" size="sm">
           {statusLabel}
         </Badge>
@@ -114,7 +118,7 @@ export function DraftCommentBubble({
           onClick={() => onSetStatus("accepted")}
         >
           <UserCheck className="size-3" />
-          Accept
+          接受
         </Button>
         <Button
           size="sm"
@@ -123,7 +127,7 @@ export function DraftCommentBubble({
           onClick={() => onSetStatus("rejected")}
         >
           <Ban className="size-3" />
-          Reject
+          拒绝
         </Button>
       </div>
     </div>

@@ -49,7 +49,7 @@ async function resolveDistDir(): Promise<string> {
   ];
   const dir = await findDir(candidates);
   if (!dir) {
-    console.error(`ERROR: Web UI not built. Run "npm run build:web" first.`);
+    console.error(`错误：Web UI 未构建，请先运行 "npm run build:web"。`);
     process.exit(1);
   }
   return dir;
@@ -100,8 +100,8 @@ export async function startReviewServer(
 
     httpServer.listen(port, () => {
       const url = `http://localhost:${port}`;
-      console.error(`Review server running at ${url}`);
-      console.error("Waiting for review submission...\n");
+      console.error(`评审服务已启动：${url}`);
+      console.error("等待评审提交…\n");
 
       // Open browser
       import("node:child_process").then(({ exec }) => {
@@ -203,8 +203,7 @@ function parseLegacySubPatches(input: string, separator: string): SubPatch[] {
     const desc = i > 0 ? parts[i - 1] : undefined;
     const fileMatch = diff.match(/^diff --git a\/(.+?) b\//m);
     const description =
-      desc?.trim() ??
-      (fileMatch ? `Changes to ${fileMatch[1]}` : `Sub-patch ${results.length + 1}`);
+      desc?.trim() ?? (fileMatch ? `对 ${fileMatch[1]} 的变更` : `子补丁 ${results.length + 1}`);
 
     results.push({ index: results.length, description, draftComments: [], diff });
   }
@@ -215,12 +214,12 @@ function parseSeparatorMetadata(
   raw: string | undefined,
   fallbackIndex: number,
 ): SubPatchMeta & { description: string } {
-  if (!raw) return { index: fallbackIndex, description: `Sub-patch ${fallbackIndex + 1}` };
+  if (!raw) return { index: fallbackIndex, description: `子补丁 ${fallbackIndex + 1}` };
   try {
     const parsed = JSON.parse(raw) as SubPatchMeta;
     return {
       index: parsed.index ?? fallbackIndex,
-      description: parsed.description?.trim() || `Sub-patch ${fallbackIndex + 1}`,
+      description: parsed.description?.trim() || `子补丁 ${fallbackIndex + 1}`,
       draftComments: parsed.draftComments ?? [],
       rewrites: parsed.rewrites,
     };
@@ -262,7 +261,7 @@ export async function parseSubPatchesFromDir(dir: string): Promise<SubPatch[]> {
     const diff = await readFile(resolve(dir, files[i]!), "utf-8");
     const meta = metaRecords[i];
     const description =
-      meta?.description ?? diff.match(/^diff --git a\/(.+?) b\//m)?.[1] ?? `Sub-patch ${i + 1}`;
+      meta?.description ?? diff.match(/^diff --git a\/(.+?) b\//m)?.[1] ?? `子补丁 ${i + 1}`;
     patches.push({
       index: i,
       description,

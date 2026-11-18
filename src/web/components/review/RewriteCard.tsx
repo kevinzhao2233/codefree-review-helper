@@ -36,15 +36,15 @@ export function RewriteCard({
     <div className="rw-card">
       <div className="rw-body">
         <div className="rw-meta">
-          <span className="rw-lines" title={`Stands in for ${lines} changed lines`}>
-            {lines} lines
+          <span className="rw-lines" title={`代替 ${lines} 行变更代码`}>
+            {lines} 行
           </span>
-          <button className="rw-comment" onClick={onComment} title="Comment on this rewrite">
+          <button className="rw-comment" onClick={onComment} title="评论此改写">
             <MessageSquarePlus className="size-3.5" />
           </button>
-          <button className="rw-switch" onClick={onShowCode} title="Show the code">
+          <button className="rw-switch" onClick={onShowCode} title="查看代码">
             <Code2 className="size-3" />
-            code
+            代码
           </button>
         </div>
         <div className="rw-text">
@@ -72,9 +72,9 @@ export function RewriteBar({
       <span className="rw-bar-label">
         {(block.title ?? block.rewrite.split("\n")[0]!).replace(/[`*]/g, "")}
       </span>
-      <button className="rw-switch" onClick={onShowRewrite} title="Show the rewrite">
+      <button className="rw-switch" onClick={onShowRewrite} title="查看改写">
         <BookOpenText className="size-3" />
-        rewrite
+        改写
       </button>
     </div>
   );
