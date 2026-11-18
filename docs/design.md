@@ -678,3 +678,199 @@ frontmatter `description` 同步注明"仅限 CodeFree 环境"。
 - **localStorage key 变更**：评审界面偏好 key 由 `reviewdeck:review:*` 改为 `codefree-review-helper:review:*`；已存的本地图例/换行等偏好会回到默认值（仅本地界面偏好，无功能影响）。
 - **build:cli Windows 兼容修复**：原 `--banner:js='#!/usr/bin/env node'` 单引号在 Windows cmd 下被拆为多个参数导致 esbuild 报错（该脚本在 Windows 上一直无法执行，此前 dist 产物来自历史构建）；改为跨平台双引号转义后 Windows 构建通过。
 - 提交序列：e4dc9c9（方案）→ 0082a04（T11，-7423 行）→ 78e320b（T12）→ aa22955（T13）→ 7917062（T14），一任务一 commit。
+- **npm 发布暂停解除（2026-11-18 用户决策）**：npm 包改名 `codefree-review-helper` 首发 `1.0.0`，tag 打在 `codefree` 分支（`main` 不再演进）；旧 `reviewdeck` 品牌尽量清除（含 `exports "./ui"` 产物改名，npm 冻结随暂停解除失效）。方案见 §19（任务 T18）。
+
+---
+
+## 18. 提交交接可靠性：前端失败提示 + submission 落盘（2026-11-18 立项）
+
+### 18.1 背景（问题调研结论）
+
+CodeFree 会话中，agent 按 skill 跑 `render` 后，评审提交结果的**唯一交接通道是 render 进程的 stdout**（`src/cli/main.ts:377-379`）：`startReviewServer`（`src/cli/render.ts:62-118`）阻塞等待 `POST /api/submit`，收到后 500ms 关服务器并 resolve，submission JSON 打到 stdout。CLI 模式下无落盘、无轮询接口、无回调（service 形态的 `get_review` 与 NAP 形态的 `notifySubmitted` 已随 §17 删除）。
+
+真实使用中该通道必然断裂：`render` 是无限期阻塞命令（等人工评审，通常远超 agent 的 bash 超时上限）。超时后：
+
+1. **进程被杀** → 服务器死 → 用户点提交时 `POST /api/submit` 连不上 → `submitReview`（`src/web/data.ts:38-47`）的 fetch reject，但 `handleSubmit`（`src/web/components/review/ReviewDeck.tsx:1005-1009`）无 catch、`data.ts` 不检查 `res.ok`，页面停在原界面且**无任何错误提示**——用户观察到"点了提交没反应"；
+2. **进程侥幸存活** → 提交成功、页面显示"评审已提交"，但 JSON 打进了无人读取的 stdout，agent 同样不知道，且数据已丢（除非 agent 自行做了重定向）。
+
+用户实测反馈与上述推断一致：提交后"什么都没发生"，必须回会话告知 agent，而 agent 已拿不到评论数据。
+
+### 18.2 方案（用户选定两项，含取舍）
+
+#### 方案 A：前端提交失败提示（T16）
+
+| 改动点                                                    | 内容                                                                 |
+| --------------------------------------------------------- | -------------------------------------------------------------------- |
+| `src/web/data.ts` `submitReview`                          | 检查 `res.ok`，非 2xx 抛 `Error`（含状态码）                         |
+| `src/web/components/review/ReviewDeck.tsx` `handleSubmit` | try/catch；失败置 `submitError` 状态并给出重试入口；提交中防重复点击 |
+
+错误提示文案（组件层统一包装，含 fetch 网络错误）：
+
+> **评审提交失败** — 评审服务可能已停止（例如被超时终止）。你的评论仍保留在本页面。请回到 CodeFree 会话，让 agent 重启评审服务后再点"重试"。
+
+设计要点：
+
+- 评论数据全在 React 内存 state 中，服务重启后重试提交无碍（POST 全量 JSON，无增量语义）；
+- `submitReview` 是 npm 冻结项 `exports "./ui"` 的公开导出（`src/web/lib-entry.ts:5`）：**签名不变**（`Promise<void>` 的 reject 本就是合法路径），仅行为从"非 2xx 静默成功"收紧为"抛错"，属 bug 修复性质；npm 发布暂停中，无即时影响，记录在案；
+- data 层保留技术信息（HTTP 状态码），友好文案由组件层包装。
+
+#### 方案 B：submission 落盘，供 agent 轮询（T15）
+
+**取舍：选"文件"而非 `/api/status` HTTP 接口。** `/api/status` 在"进程被超时杀死"这一核心场景下完全失效（连接不上无从查询），且提交后 500ms 服务器即关闭、轮询窗口极窄；文件系统独立于进程生命周期，全场景可靠。**文件存在 = 已提交 = 数据即在其中**，标志与数据合一，agent 用一次 bash 查文件即可，等价于 service 形态的 `get_review` 轮询。
+
+| 改动点                                  | 内容                                                                                           |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `src/cli/render.ts` `startReviewServer` | opts 扩展 `{ port?, submissionPath?, openBrowser?, onReady? }`；`/api/submit` 处理重构（见下） |
+| `src/cli/main.ts` `cmdRender`           | 新增 `-o <文件>` 参数；submissionPath 计算与 usage/帮助文案更新                                |
+
+`/api/submit` 新处理顺序（落盘在响应前，保证 `200 = 已落盘` 的语义）：
+
+1. `JSON.parse` 包 try/catch，非法 JSON → `400 {error}`（现状是 unhandled throw 挂死请求，顺带修复）；
+2. 有 `submissionPath` → **原子落盘**（写 `<path>.tmp` → `rmSync(target, {force:true})` → `renameSync`；覆盖旧文件，兼容评审目录复用）；失败 → `500 {error}`，**服务器不关**，前端可重试；
+3. 成功 → `200 {ok:true}` → 500ms 后关服务器 + resolve（stdout 输出行为不变，向后兼容）；
+4. 无 `submissionPath` → stderr 警告"未指定落盘路径，submission 仅输出到 stdout"，其余不变。
+
+submissionPath 计算规则：
+
+| render 输入                                | 落盘路径                                                                             |
+| ------------------------------------------ | ------------------------------------------------------------------------------------ |
+| 目录模式（`render <dir>`，skill 标准用法） | 默认 `<dir>/submission.json`，`-o` 可覆盖                                            |
+| stdin 模式（`render -`）                   | 仅当显式传 `-o`；缺省不落盘（向后兼容管道用法 `split ... \| render -`）+ stderr 警告 |
+
+**落盘位置与 git 污染（用户评审关切，2026-11-18）**：`<dir>` 按 skill 约定是 `mktemp -d` 级一次性工作目录（系统临时目录下，不在任何 git 仓库内），submission.json 与 `review.diff`/`split.json`/`sub*.diff` 同址，**不引入新的暴露面**。该约定现状仅在 SKILL.md §0 提示、约束不硬，T17 将其升级为流程前的硬性步骤（见方案 C），从源头杜绝"agent 在用户仓库内建工作目录 → 评审产物被 git 捕获"。CLI 侧不做"目标目录是否在 git 仓库内"的防呆检测——手动跑 CLI 的用户有权自选目录，魔法检测会误伤合法用法。
+
+可注入性（为测试与远端场景）：`openBrowser?: boolean`（默认 true，测试传 false 避免真开浏览器）；`onReady?: (info: {port, url}) => void`（测试获取实际监听端口）。
+
+#### 方案 C：SKILL.md agent 工作流更新（T17）
+
+落盘只提供"可轮询性"，agent 还需被指导**主动用起来**。`skills/codefree-review-helper/SKILL.md` §5 重写 render 段：
+
+0. **工作目录硬性约束（前置步骤）**：评审工作目录必须位于系统临时目录（PowerShell `$env:TEMP` / bash `mktemp -d` 产物），**禁止在用户仓库或项目目录内创建**——评审产物（diff/split/子补丁/submission.json）不得进入 git 跟踪范围；agent 发现工作目录位于仓库内时，迁移到临时目录后继续；
+1. **后台启动** render（勿前台等待，超时会被杀）：PowerShell `Start-Process ... -RedirectStandardOutput render-stdout.log ...` / bash `nohup ... > render-stdout.log 2>&1 &`；
+2. **轮询** `<dir>/submission.json`：每次工具调用顺带检查一次；用户说"已提交"时也**先查该文件**再继续；
+3. 文件出现 → 读 JSON → 进入 §6 回帖；回帖完成前不删除（幂等重跑的依据）；
+4. 用户报"提交失败/服务已停止"（对应方案 A 的提示）→ 重启流程：**先删旧 `submission.json`**（防读到旧评审），确认端口未被占用（旧进程退出或 `-p` 换端口），再后台启动，请用户重新提交。
+
+### 18.3 不做的事（明确排除）
+
+- 不做 `/api/status` HTTP 接口（取舍理由见 §18.2 方案 B）；
+- 不改 stdout 输出行为、不新增存储/数据库；
+- 不改提交后"关服务器 + 进程退出"的 CLI 语义；
+- 不动 npm 冻结项的导出面（仅行为收紧，见 §18.2 方案 A）。
+
+### 18.4 任务拆分与提交
+
+| 任务 | 内容                                                               | commit message             |
+| ---- | ------------------------------------------------------------------ | -------------------------- |
+| T15  | render 落盘 + `-o` 参数 + openBrowser/onReady 注入 + 单测          | `T15: render 提交结果落盘` |
+| T16  | data.ts `res.ok` 检查 + ReviewDeck 失败提示/重试/防重复点击 + 单测 | `T16: 评审提交失败提示`    |
+| T17  | SKILL.md §5 agent 工作流更新（后台启动/轮询/重启清理）             | `T17: skill 提交流程更新`  |
+
+AC 验收随各任务执行，结果统一回填 §18.6。
+
+### 18.5 验收标准（AC）
+
+| #       | 标准                                                                                                                                                                                    | 验证方法                                                    |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| AC-18.1 | `submitReview` 非 2xx 抛含状态码的错误；2xx 正常 resolve                                                                                                                                | 单测（stub `globalThis.fetch`，node 环境）                  |
+| AC-18.2 | kill render 进程后提交：页面显示"评审提交失败"提示（含"回会话让 agent 重启"指引），评论保留，可重试                                                                                     | 手动（AC-18.9 场景 2 顺带验证）                             |
+| AC-18.3 | 目录模式提交后 `<dir>/submission.json` 生成，内容 == stdout JSON 且为合法 JSON                                                                                                          | 单测（`openBrowser:false` + `onReady` 拿端口 + fetch POST） |
+| AC-18.4 | `-o` 显式路径生效；stdin 模式无 `-o` 时不落盘且 stderr 有警告                                                                                                                           | 单测                                                        |
+| AC-18.5 | 非法 JSON → 400；落盘失败 → 500 且服务器保持存活（可再次提交）                                                                                                                          | 单测                                                        |
+| AC-18.6 | SKILL.md 含工作目录硬性约束（系统临时目录、禁入仓库）、后台启动、轮询 submission.json、重启前删旧文件、端口占用处理五项指导                                                             | 文本审查                                                    |
+| AC-18.7 | `vp test` 全绿；`npm run lint`（vp check + knip + depcruise）通过                                                                                                                       | 实跑命令                                                    |
+| AC-18.8 | 端到端（复用 T4 测试数据，`-p` 随机端口）：① 后台 render → 提交 → submission.json 出现且内容正确；② kill render → 提交 → 前端失败提示 → 重启（先删旧文件）→ 重试 → 成功且文件为本次内容 | 手动                                                        |
+| AC-18.9 | 无新增 `reviewdeck` 字样引用；不 bump 版本、不打 tag、不 publish                                                                                                                        | `git grep` + 流程确认                                       |
+
+### 18.6 验收记录（回填处）
+
+| AC      | 结果   | 证据 | 日期 |
+| ------- | ------ | ---- | ---- |
+| AC-18.1 | 待验收 |      |      |
+| AC-18.2 | 待验收 |      |      |
+| AC-18.3 | 待验收 |      |      |
+| AC-18.4 | 待验收 |      |      |
+| AC-18.5 | 待验收 |      |      |
+| AC-18.6 | 待验收 |      |      |
+| AC-18.7 | 待验收 |      |      |
+| AC-18.8 | 待验收 |      |      |
+| AC-18.9 | 待验收 |      |      |
+
+---
+
+## 19. npm 包首发 codefree-review-helper@1.0.0（2026-11-18 立项，任务 T18）
+
+> 2026-11-18 用户决策：npm 发布暂停解除，npm 包改名 `codefree-review-helper` 首发 `1.0.0`；tag 打在 `codefree` 分支，`main` 分支不再演进；旧 `reviewdeck` 品牌"尽量能改的都改"。§17 的 npm 冻结（`reviewdeck-ui.js` 等）随之失效。
+
+### 19.1 需求与用户决策
+
+| 决策点                 | 用户决策（2026-11-18）                                                                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| npm 包名               | `codefree-review-helper`（npm 上未被占用，已确认可注册）                                                                                         |
+| 首版版本               | `1.0.0`                                                                                                                                          |
+| tag 位置               | 打在 `codefree` 分支 HEAD；`main` 不再演进（仅作历史保留）                                                                                       |
+| 旧 reviewdeck 品牌     | "尽量能改的都改"：含 `exports "./ui"` 产物改名 `reviewdeck-ui.js` → `codefree-review-helper-ui.js`（1.0.0 首发无存量用户，改名零 breaking 成本） |
+| license                | 上游无 LICENSE、本仓库也无：**本次不加**（版权判断留给用户，如需后续单独加）                                                                     |
+| 旧 `reviewdeck` npm 包 | 不做 deprecate/unpublish（不动旧包）                                                                                                             |
+| 发布机制               | 复用 `.github/workflows/publish.yml`（npm Trusted Publishing/OIDC，无 NPM_TOKEN secret；用户去 npmjs.com 配置包绑定）                            |
+
+### 19.2 发布顺序决策（待用户审批时确认）
+
+§18（提交交接可靠性，T15/T16/T17）已立项待实施。1.0.0 是否包含该修复，两条路径：
+
+- **路径 A（推荐）**：先实施 T15/T16/T17（§18.8 端到端验收通过）→ 再执行 T18 发布。1.0.0 含提交落盘与失败提示，真实评审不再遇到"提交后什么都没发生、评论数据丢失"（§18.1 实测问题）。
+- **路径 B**：按字面"现在打 tag"立即发布 1.0.0（不含 §18 修复）→ T15/T16/T17 完成后再发 1.0.1。发布快，但 1.0.0 用户会复现提交丢失问题。
+
+### 19.3 改动清单（T18）
+
+| 文件                                       | 改动                                                                                                                                                                                                          |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `package.json`                             | `version` → **1.0.0**；`description` 更新为中文定位；`homepage`/`bugs`/`repository` → `https://github.com/kevinzhao2233/reviewdeck`（fork 仓库）；`exports "./ui"` → `./dist/ui/codefree-review-helper-ui.js` |
+| `package-lock.json`                        | name 两处 `reviewdeck` → `codefree-review-helper`（T12 漏改）；version 同步 1.0.0                                                                                                                             |
+| `src/web/vite.config.lib.ts`               | `fileName: "reviewdeck-ui"` → `"codefree-review-helper-ui"`（`cssFileName: "style"` 不变，`exports "./ui/style.css"` 路径不变）                                                                               |
+| `src/web/lib-entry.ts`                     | `ReviewDeck` → `ReviewHelper`、`ReviewDeckProps` → `ReviewHelperProps`（`SubPatch` 不变）                                                                                                                     |
+| `src/web/components/review/ReviewDeck.tsx` | 文件名 → `ReviewHelper.tsx`；组件/类型名同步                                                                                                                                                                  |
+| `src/web/app.tsx`                          | import 与使用同步                                                                                                                                                                                             |
+| `AGENTS.md`                                | Release 段解冻改写：`codefree-review-helper@1.0.0` 起以新包发布；`exports "./ui"` 产物已改名 `codefree-review-helper-ui.js`                                                                                   |
+| `README.md`                                | 安装段补 npm 包方式（`npm i -g codefree-review-helper` / `npx codefree-review-helper`）                                                                                                                       |
+| `skills/codefree-review-helper/SKILL.md`   | CLI 运行方式补 npm 备选：`npx codefree-review-helper@^1.0.0`                                                                                                                                                  |
+
+注：组件改名后，§18.2 方案 A 中 `ReviewDeck.tsx` 路径引用对应变为 `ReviewHelper.tsx`（T16 实施时若 T18 已先行，以实际路径为准）。
+
+### 19.4 不可改项说明
+
+- **GitHub 仓库名**保持 `kevinzhao2233/reviewdeck`（改名影响 remote/CI/Trusted Publishing 绑定，用户未要求）；
+- `docs/design.md` 与 `AGENTS.md` 中的历史记录（"原名 reviewdeck"等）保留——历史事实，非使用行为；
+- 旧 npm 包 `reviewdeck`（上游/历史发布）不做任何操作。
+
+### 19.5 发布流程
+
+1. **用户（npmjs.com）**：为 `codefree-review-helper` 配置 Trusted Publishing，绑定 GitHub 仓库 `kevinzhao2233/reviewdeck` + workflow `.github/workflows/publish.yml`；
+2. **用户（GitHub）**：fork 仓库 Actions 页面启用 workflows；
+3. **代码侧（T18）**：§19.3 改动 → `npm run build`（三产物）→ `npm run pack:dry-run` 验证包内容（name/bin/files/exports/产物名）→ `vp test` 全绿；
+4. **打 tag**：`git tag v1.0.0`（codefree 分支对应 commit）→ push tag → publish.yml 自动发布（校验 tag==version → npm ci → test → build → `npm publish --provenance --access public`）；
+5. **验证**：`npm view codefree-review-helper version` == 1.0.0，provenance 指向本仓库。
+
+### 19.6 验收标准（AC）
+
+| #       | 标准                                                                                                                                                                                          |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AC-19.1 | `git grep -i reviewdeck`（排除 `docs/`）仅剩：AGENTS.md 历史说明、package.json/AGENTS.md 中 GitHub URL（仓库名）；组件/产物/导出名全部为 `ReviewHelper`/`codefree-review-helper-ui`           |
+| AC-19.2 | `npm run pack:dry-run`：包名/bin/files/exports 与 §19.3 一致，包内含 `dist/codefree-review-helper.mjs`、`dist/web/`、`dist/ui/codefree-review-helper-ui.js`、`skills/codefree-review-helper/` |
+| AC-19.3 | `vp test` 全绿、`npm run lint`（vp check + knip + depcruise）通过、`npm run build` 三产物正常                                                                                                 |
+| AC-19.4 | 文档一致：README 含 npm 安装方式、AGENTS.md 解冻说明、SKILL.md 含 npx 备选                                                                                                                    |
+| AC-19.5 | 用户侧配置完成（Trusted Publishing + Actions 启用）                                                                                                                                           |
+| AC-19.6 | tag `v1.0.0` 推送后 Actions 发布成功；`npm view codefree-review-helper` version=1.0.0                                                                                                         |
+| AC-19.7 | 旧 `reviewdeck` 包未被修改（无 deprecate/unpublish）                                                                                                                                          |
+
+### 19.7 验收记录（回填处）
+
+| AC      | 结果   | 证据 | 日期 |
+| ------- | ------ | ---- | ---- |
+| AC-19.1 | 待验收 |      |      |
+| AC-19.2 | 待验收 |      |      |
+| AC-19.3 | 待验收 |      |      |
+| AC-19.4 | 待验收 |      |      |
+| AC-19.5 | 待验收 |      |      |
+| AC-19.6 | 待验收 |      |      |
+| AC-19.7 | 待验收 |      |      |
