@@ -421,7 +421,10 @@ function DiffBody({
       // backtracking on Go struct tags + interface{} — see
       // https://github.com/shikijs/textmate-grammars-themes/issues/182
       preferredHighlighter: "shiki-wasm" as const,
-      expandUnchanged: true,
+      // Do not auto-expand unchanged regions on render: sub-patches are
+      // partial diffs and @pierre/diffs throws without a loadDiffFiles
+      // callback (not available in local render mode).
+      expandUnchanged: false,
       enableGutterUtility: true,
       enableLineSelection: true,
       lineHoverHighlight: "both" as const,

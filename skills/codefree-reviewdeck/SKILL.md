@@ -134,11 +134,11 @@ node <reviewdeck-dist>/reviewdeck.mjs render output/
 
 ### 6.4 发送映射
 
-| 评论             | 工具与参数                                                                                                                                                                                                                                                       |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `side=additions` | `add_mr_row_comment`：`filePath=file`，`startLine=endLine=line`（新文件 1-based 行号，与 submission 的 `line` 语义一致），`rowComment=<body>\n\n<!-- reviewdeck:<marker> -->`，附 `repoFullName`、`mergeId`、`branchName`、`commitId`、`diffType`（来源见 §6.5） |
-| `side=deletions` | `add_mr_global_comment`：正文 `**<file>:<line>（删除侧）**\n\n<body>\n\n<!-- reviewdeck:<marker> -->`                                                                                                                                                            |
-| 行内发送失败     | 降级 `add_mr_global_comment`：正文 `**<file>:<line>**\n\n<body>\n\n<!-- reviewdeck:<marker> -->`，计入"降级"                                                                                                                                                     |
+| 评论             | 工具与参数                                                                                                                                                                                                                                                                                                                                |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `side=additions` | `add_mr_row_comment`：`filePath=file`，`startLine=endLine=line`（新文件 1-based 行号，与 submission 的 `line` 语义一致），`rowComment=<body>\n\n<!-- reviewdeck:<marker> -->`，`newThread=1`（**T4 实测必填**，缺省返回 `code 2005 必填参数不能为空`），附 `repoFullName`、`mergeId`、`branchName`、`commitId`、`diffType`（来源见 §6.5） |
+| `side=deletions` | `add_mr_global_comment`：正文 `**<file>:<line>（删除侧）**\n\n<body>\n\n<!-- reviewdeck:<marker> -->`                                                                                                                                                                                                                                     |
+| 行内发送失败     | 降级 `add_mr_global_comment`：正文 `**<file>:<line>**\n\n<body>\n\n<!-- reviewdeck:<marker> -->`，计入"降级"                                                                                                                                                                                                                              |
 
 发送顺序按 comments 数组顺序逐条执行；单条失败不中断其余评论。
 
