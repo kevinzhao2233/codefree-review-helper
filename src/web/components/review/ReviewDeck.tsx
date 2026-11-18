@@ -626,7 +626,7 @@ function FileDiffView({
   return (
     <div
       className={cn(
-        "animate-fade-in-up rounded-lg border shadow-[0_1px_3px_oklch(0/0/0/0.2)] transition-colors",
+        "animate-fade-in-up rounded-lg border shadow-[0_1px_3px_oklch(0/0/0/0.06)] transition-colors",
         viewed ? "border-border/30 bg-card/55" : "border-border/60 bg-transparent",
       )}
     >
@@ -830,7 +830,7 @@ function SubPatchView({
         </div>
         <div className="flex shrink-0 items-center gap-3">
           {hasRewrites && (
-            <div className="inline-flex rounded-md border border-border bg-background/70 p-1 shadow-[0_1px_2px_oklch(0/0/0/0.12)]">
+            <div className="inline-flex rounded-md border border-border bg-background/70 p-1 shadow-[0_1px_2px_oklch(0/0/0/0.05)]">
               {(
                 [
                   ["rewrite", BookOpenText, "Rewrite"],
@@ -1266,7 +1266,7 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
             <button
               onClick={() => setWrap((w) => !w)}
               className={cn(
-                "flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider shadow-[0_1px_2px_oklch(0/0/0/0.12)] transition-colors",
+                "flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider shadow-[0_1px_2px_oklch(0/0/0/0.05)] transition-colors",
                 wrap
                   ? "bg-primary text-primary-foreground"
                   : "bg-background/70 text-muted-foreground hover:bg-surface hover:text-foreground",
@@ -1276,7 +1276,7 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
               <WrapText className="size-3" />
               Wrap
             </button>
-            <div className="inline-flex rounded-md border border-border bg-background/70 p-1 shadow-[0_1px_2px_oklch(0/0/0/0.12)]">
+            <div className="inline-flex rounded-md border border-border bg-background/70 p-1 shadow-[0_1px_2px_oklch(0/0/0/0.05)]">
               <button
                 onClick={() => setDiffStyle("split")}
                 className={cn(
@@ -1351,7 +1351,7 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
                       className={cn(
                         "flex size-5 items-center justify-center rounded-full font-[family-name:var(--font-mono)] text-[10px] font-semibold transition-all duration-150",
                         isActive
-                          ? "bg-primary text-primary-foreground shadow-[0_0_8px_oklch(0.78_0.145_75/0.3)]"
+                          ? "bg-primary text-primary-foreground shadow-[0_0_8px_oklch(0.205_0_0/0.25)]"
                           : "border border-border bg-card text-muted-foreground group-hover:border-foreground/20 group-hover:text-foreground/70",
                       )}
                     >

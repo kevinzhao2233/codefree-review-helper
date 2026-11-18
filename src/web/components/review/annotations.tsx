@@ -61,12 +61,12 @@ export function CommentBubble({
   onDelete: () => void;
 }) {
   return (
-    <div className="annotation-card annotation-card-human group/comment flex items-start gap-2.5 rounded-md px-3.5 py-3 text-[13px] leading-relaxed shadow-[0_1px_2px_oklch(0/0/0/0.15)]">
+    <div className="annotation-card annotation-card-human group/comment flex items-start gap-2.5 rounded-md px-3.5 py-3 text-[13px] leading-relaxed shadow-[0_1px_2px_oklch(0/0/0/0.06)]">
       <MessageSquare className="annotation-meta mt-0.5 size-3 shrink-0" />
       <span className="annotation-body flex-1 whitespace-pre-wrap leading-6">{comment.body}</span>
       <button
         onClick={onDelete}
-        className="annotation-meta mt-0.5 shrink-0 rounded p-1 hover:bg-white/8 hover:text-white"
+        className="annotation-meta mt-0.5 shrink-0 rounded p-1 hover:bg-black/10 hover:text-foreground"
         title="Delete comment"
       >
         <X className="size-3" />
@@ -94,7 +94,7 @@ export function DraftCommentBubble({
   return (
     <div
       className={cn(
-        "annotation-card flex flex-col gap-2.5 rounded-md px-3.5 py-3 text-[13px] leading-relaxed shadow-[0_1px_2px_oklch(0/0/0/0.15)]",
+        "annotation-card flex flex-col gap-2.5 rounded-md px-3.5 py-3 text-[13px] leading-relaxed shadow-[0_1px_2px_oklch(0/0/0/0.06)]",
         toneClass,
       )}
     >
