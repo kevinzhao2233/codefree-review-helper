@@ -1,6 +1,6 @@
 # codefree-reviewdeck 设计文档
 
-> **状态：执行中** —— T0 已提交（设计已审批），T1 实测完成并回填 §10，T2 起依次推进。
+> **状态：第一部分（转换任务 T0–T4）已完成；第二部分（界面中文化 T5–T9）设计中，待审批。**
 >
 > **文档地位**：本文件是"reviewdeck 转换为基于 CodeFree 与研发云"任务的**唯一设计文档**，承载需求、方案、任务拆解、AC 与验收结果。实测结论与验收结果直接回填本文件对应章节，禁止新建其他设计/需求/验收文档。
 
@@ -377,3 +377,175 @@ T3 已验证 AC：AC-2.1（单页场景）、AC-2.2、AC-2.3（4 文件全量）
 | AC-6.1 | 通过（T0-T3 持续核对）       | `git diff --stat` 仅含 docs/design.md、AGENTS.md、skills/codefree-reviewdeck/**；T4 经用户批准追加 `src/web/components/review/ReviewDeck.tsx` 一处 bug 修复（见 §10 T4 发现 4） | 2026-11-18 |
 | AC-6.2 | **通过（T4）**               | ReviewDeck.tsx 修改后复跑 `vp test`：11 文件 108 用例全绿（2026-11-18）                                                                                                         | 2026-11-18 |
 | AC-6.3 | 通过（T0-T4）                | d63c381（T0）/ 01311aa（T1）/ e4ef11f（T2）/ ce76b77（T3）/ T4 本提交，一任务一 commit                                                                                          | 2026-11-18 |
+
+---
+
+# 第二部分：Web 界面中文化与主题改造（T5–T9）
+
+## 12. 需求（W-1～W-9）与决策
+
+用户于 2026-11-18 提出 9 条需求，对象为 `reviewdeck render` 浏览器评审界面（含 CLI 输出与 NAP server 界面）：
+
+| #   | 需求                                                                                                 |
+| --- | ---------------------------------------------------------------------------------------------------- |
+| W-1 | 浏览器打开后 `<html lang>` 切换为中文                                                                |
+| W-2 | 界面展示内容尽量中文化（专有英文词汇除外）                                                           |
+| W-3 | 主题色改为白色（shadcn 默认风格，border ≈ #e5e5e5），其他颜色按需处理                                |
+| W-4 | LLM 生成的评论、标题等输出为中文                                                                     |
+| W-5 | 侧栏 patch 列表项内容允许多行展示（当前单行截断，内容看不全且无 tooltip）                            |
+| W-6 | Comments 进度条需要文字说明绿/黄/灰点的含义                                                          |
+| W-7 | 快捷键提示同时展示 Mac 与 Windows                                                                    |
+| W-8 | 侧栏 "REVIEW / N patches" 行不允许换行                                                               |
+| W-9 | Wrap/Split 等配置收进齿轮设置面板（popover），位置在 REVIEW 行右边（与 Submit 左边二选一，已定前者） |
+
+### 12.1 用户决策（2026-11-18 确认）
+
+1. **中文化范围**：全部——评审界面 + NAP server 界面（`AppShell.tsx`/`ChatPanel.tsx`）+ CLI 控制台输出（`render.ts`）；
+2. **强调色**：shadcn neutral（primary 近黑），语义色（成功绿/待定黄/危险红）保留并调整为浅色背景可读色值；
+3. **齿轮位置**：REVIEW 行右边（与标题同一行）；
+4. **Rewrite/Code 阅读模式切换**：保留在内容区头部，不收进设置面板；
+5. **LLM 中文输出**：`nap/skills/reviewdeck/SKILL.md` 与 `skills/codefree-reviewdeck` 一并修改。
+
+### 12.2 研究结论
+
+- **j/k 快捷键未实现**：`ReviewDeck.tsx:1215` 仅有注释，无 `addEventListener`。W-7 仅涉及现有 `⌘↵` 提示的双平台化（`annotations.tsx:39`、`ChatPanel.tsx:262`），不新增误导性提示；
+- **@pierre/diffs 主题机制**：diff 样式用 CSS `light-dark()` 函数（`--diffs-bg: light-dark(var(--diffs-light-bg), var(--diffs-dark-bg))`），由 `color-scheme` CSS 属性决定分支。当前 `index.html` 有 `class="dark"` 但从未声明 `color-scheme`；改浅色需：去掉 dark class + 显式 `color-scheme: light` → github-light 高亮生效；
+- **无 popover 组件/依赖**：`components/ui/` 仅 button/badge/textarea（手写，无 radix）。设置面板手写实现（useState + click-outside + Esc 关闭）；
+- **`PREVIEW x patches` 字样源码中不存在**：实际为 `REVIEW` 标题 + `N patches` 副文本（`ReviewDeck.tsx:1258-1263`），用户所指即此处；
+- **`render.test.ts` 未断言 fallback 描述文案**：`render.ts` 的 `Changes to X`/`Sub-patch N` fallback 中文化无测试风险；
+- **深色硬编码样式分布**：`app.css` 中 `annotation-card` 四态、`rw-*` 系列、`file-toolbar`、`comment-progress` 系列、scrollbar、noise overlay、`chat-md` 均为深色 oklch 硬编码，需逐一适配浅色。
+
+## 13. 方案
+
+### 13.1 主题改造（W-1、W-3）
+
+`src/web/index.html`：
+
+- `lang="en" class="dark"` → `lang="zh-CN"`（移除 dark class）；
+- `<title>reviewdeck Review</title>` → `<title>reviewdeck 评审</title>`。
+
+`src/web/app.css` `@theme` 替换为 shadcn neutral light 色板：
+
+| token                        | 值                        | 说明                |
+| ---------------------------- | ------------------------- | ------------------- |
+| `--color-background`         | `oklch(1 0 0)`            | 纯白                |
+| `--color-foreground`         | `oklch(0.145 0 0)`        | 近黑                |
+| `--color-card`               | `oklch(1 0 0)`            | 纯白                |
+| `--color-surface`            | `oklch(0.968 0 0)`        | 侧栏选中/hover 背景 |
+| `--color-muted`              | `oklch(0.968 0 0)`        |                     |
+| `--color-muted-foreground`   | `oklch(0.556 0 0)`        |                     |
+| `--color-border`             | `oklch(0.922 0 0)`        | ≈ #e5e5e5           |
+| `--color-border-subtle`      | `oklch(0.955 0 0)`        |                     |
+| `--color-primary`            | `oklch(0.205 0 0)`        | 近黑                |
+| `--color-primary-foreground` | `oklch(0.985 0 0)`        |                     |
+| `--color-primary-muted`      | `oklch(0.205 0 0 / 0.08)` |                     |
+| `--color-success`            | `oklch(0.55 0.14 155)`    | 浅底可读绿          |
+| `--color-warning`            | `oklch(0.62 0.13 75)`     | 浅底可读琥珀        |
+| `--color-destructive`        | `oklch(0.55 0.2 25)`      |                     |
+| `--color-info`               | `oklch(0.55 0.12 240)`    |                     |
+
+配套改动：
+
+- `:root { color-scheme: light }`（保证 `light-dark()` 取 light 分支，diff 区域 github-light 白底）；
+- 深色硬编码样式逐一适配：annotation-card 四态（浅色底+同色系边框）、`rw-*`（卡片浅底、琥珀左边条改深琥珀）、`file-toolbar`（白色半透明+模糊保留）、`comment-progress`（track 浅灰、绿/黄/灰段加深）、scrollbar（浅灰）、noise overlay（opacity 降至 0.012 或移除）、`chat-md`/`rw-text` 代码块（浅灰底深字）；
+- `pulse-dot`/`annotation-flash`/`rw-switch` 等 oklch 琥珀色改为新 primary/语义色变量。
+
+### 13.2 文案词表（W-2）
+
+原则：说明性文字中文化；工具专有概念与 diff 领域术语保留英文（Rewrite/Code/Split/Unified/Wrap 按钮文案保留，tooltip 中文说明；patch 保留）。
+
+| 位置         | 现文案                                                                                                                                                                 | 新文案                                                                                                                                                                                                                                |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 侧栏标题     | REVIEW                                                                                                                                                                 | 评审                                                                                                                                                                                                                                  |
+| 侧栏副文本   | N patches                                                                                                                                                              | N 个 patch                                                                                                                                                                                                                            |
+| 侧栏注释行   | Submit sends accepted agent drafts plus your own comments. Rejected drafts stay out.                                                                                   | 提交会发送已接受的 AI 草稿和你的评论；被拒绝的草稿不会发送                                                                                                                                                                            |
+| 提交按钮     | Submit                                                                                                                                                                 | 提交                                                                                                                                                                                                                                  |
+| 提交完成     | Review submitted / N final comment(s) sent. You can close this tab.                                                                                                    | 评审已提交 / 已发送 N 条最终评论，可以关闭此页签                                                                                                                                                                                      |
+| 加载态       | LOADING                                                                                                                                                                | 加载中…                                                                                                                                                                                                                               |
+| 进度卡标题   | Whole review / This patch                                                                                                                                              | 整体评审 / 当前 patch                                                                                                                                                                                                                 |
+| 进度 chips   | N included / N pending / N omitted                                                                                                                                     | 已包含 N / 待定 N / 已省略 N                                                                                                                                                                                                          |
+| 草稿徽章     | N accepted / N pending / N rejected                                                                                                                                    | 已接受 N / 待定 N / 已拒绝 N                                                                                                                                                                                                          |
+| 批量按钮     | Accept Pending / Reject Pending                                                                                                                                        | 接受待定 / 拒绝待定                                                                                                                                                                                                                   |
+| 阅读模式     | Rewrite / Code                                                                                                                                                         | 保留英文（专有概念）                                                                                                                                                                                                                  |
+| 覆盖切换     | Cover all / Reveal all                                                                                                                                                 | 全部收起 / 全部展开                                                                                                                                                                                                                   |
+| 覆盖计数     | N/M lines to read                                                                                                                                                      | 剩余 N/M 行待读                                                                                                                                                                                                                       |
+| 改写计数     | N/M rewritten                                                                                                                                                          | 已改写 N/M 行                                                                                                                                                                                                                         |
+| 侧栏计数     | N human                                                                                                                                                                | N 条人工                                                                                                                                                                                                                              |
+| 文件已读     | Mark as (un)viewed                                                                                                                                                     | 标记为已读 / 取消已读                                                                                                                                                                                                                 |
+| 评论导航     | Comments / Previous(Next) comment                                                                                                                                      | 评论 / 上一条（下一条）                                                                                                                                                                                                               |
+| 评论表单     | Leave a comment... / ⌘↵ to submit / Cancel / Comment                                                                                                                   | 写下评论… / ⌘↵ 或 Ctrl+↵ 提交 / 取消 / 评论                                                                                                                                                                                           |
+| 草稿气泡     | Agent draft / Accepted / Rejected / Draft / Accept / Reject / Delete comment                                                                                           | AI 草稿 / 已接受 / 已拒绝 / 待定 / 接受 / 拒绝 / 删除评论                                                                                                                                                                             |
+| 改写卡       | N lines / Stands in for N changed lines / Comment on this rewrite / Show the code(rewrite) / code / rewrite                                                            | N 行 / 代替 N 行变更代码 / 评论此改写 / 查看代码（改写）/ 代码 / 改写                                                                                                                                                                 |
+| NAP 界面     | Reviews / Git access / set / not set / Save / Clear / Sign out / just now / Nm ago / N groups / N comments / Reply… / (⌘↵ to send) / No review agent on this server... | 评审列表 / Git 凭证 / 已设置 / 未设置 / 保存 / 清除 / 退出登录 / 刚刚 / N 分钟前 / N 个分组 / N 条评论 / 回复… / (⌘↵ 或 Ctrl+↵ 发送) / 此服务器未接入评审 agent。设置 RD_NAP_URL、RD_NAP_CLIENT_ID 与 RD_NAP_CLIENT_SECRET 以连接 NAP |
+| CLI stderr   | Review server running at / Waiting for review submission...                                                                                                            | 评审服务已启动 / 等待评审提交…                                                                                                                                                                                                        |
+| CLI fallback | Changes to X / Sub-patch N                                                                                                                                             | 对 X 的变更 / 子补丁 N                                                                                                                                                                                                                |
+
+### 13.3 侧栏布局（W-5、W-6、W-8）
+
+- **W-5**：patch 列表项描述 `block truncate`（`ReviewDeck.tsx:1366`）→ `block break-words` 完整多行展示；外层按钮加 `title={patch.description}` 提供悬停全文；
+- **W-6**："整体评审"卡片进度条下方 chips 从纯数字改为"已包含 N / 待定 N / 已省略 N"，chip 的 `title` 说明语义（已包含=已接受或待定的 AI 草稿、待定=尚未决策的草稿、已省略=该草稿所在行不在当前 patch 内，随整体提交时被丢弃）；
+- **W-8**：REVIEW 标题行区域 `whitespace-nowrap`。
+
+### 13.4 设置面板（W-9）
+
+- REVIEW 标题行右侧加齿轮按钮（lucide `Settings2`）；
+- 点击弹出 popover（手写：`useState` 开关 + click-outside + Esc 关闭，`absolute` 定位、右对齐、白底描边阴影），内容：
+  - **自动换行** 开关（对应现 `wrap`，localStorage key 不变 `reviewdeck:review:diff-wrap`）；
+  - **对比视图** Split / Unified 分段切换（localStorage key 不变 `reviewdeck:review:diff-style`）；
+- 侧栏顶部原 Wrap 按钮 + Split/Unified 切换组移除；
+- 设置改动即时生效（现有 state 流不动，仅迁移入口）。
+
+### 13.5 快捷键提示（W-7）
+
+- `annotations.tsx:39`：`⌘↵` → `⌘↵ / Ctrl+↵`（后接"提交"）；
+- `ChatPanel.tsx:262`：`(⌘↵ to send)` → `(⌘↵ 或 Ctrl+↵ 发送)`；
+- 不新增 j/k 提示（功能未实现）。
+
+### 13.6 LLM 中文输出（W-4）
+
+- `skills/codefree-reviewdeck/references/split.md`：新增"输出语言"要求——`description`、`draftComments[].body` 一律简体中文（代码标识符/专有名词除外）；示例 JSON 中文化；
+- `skills/codefree-reviewdeck/references/rewrite.md`：rewrites 的 `title`/`rewrite` 中文要求 + 示例中文化；
+- `skills/codefree-reviewdeck/SKILL.md`：§4/§5 相关段落补一句输出语言要求；
+- `nap/skills/reviewdeck/SKILL.md`：同步以上要求（L53-54 生成规范处 + L80-83 示例中文化）。
+
+## 14. 任务拆分与提交计划
+
+| 任务 | 内容                                                                                                                   | commit                         |
+| ---- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| T5   | 本设计章节（§12–§16）写入并经用户审批                                                                                  | `T5: 界面中文化与主题改造设计` |
+| T6   | 主题改造：index.html（lang/title/去 dark）、app.css（色板 + color-scheme + 深色样式适配）                              | `T6: 白色主题与 lang 中文化`   |
+| T7   | 文案中文化：ReviewDeck/annotations/RewriteCard/AppShell/ChatPanel + render.ts（CLI 输出与 fallback）+ 快捷键双平台提示 | `T7: 界面文案中文化`           |
+| T8   | 侧栏与设置面板：多行展示+tooltip、进度条图例、REVIEW 行 nowrap、齿轮设置 popover                                       | `T8: 侧栏布局与设置面板`       |
+| T9   | LLM 中文输出指令：codefree-reviewdeck skill（split/rewrite/SKILL）+ nap skill 同步                                     | `T9: LLM 输出中文指令`         |
+
+- 顺序执行（T6–T8 均涉及 ReviewDeck.tsx/app.css，避免交叉）；每任务一个 commit，commit message 带任务编号；
+- 每任务完成后 `npm run build:web` 验证构建；T7 后跑 `vp test` 全量回归；
+- T8 完成后启动 render 由用户浏览器验收（W-2/W-3/W-5/W-6/W-7/W-8/W-9 视觉项一次性核对）；W-4 留待下次真实 MR 评审验证。
+
+## 15. 验收标准（AC-W1～W-9）
+
+| AC    | 验证方式                                                                                                                                                                            |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AC-W1 | 浏览器打开后 `<html lang="zh-CN">`、无 `dark` class、页签标题"reviewdeck 评审"（dist 检查 + 用户核对）                                                                              |
+| AC-W2 | §13.2 词表全部落地；界面无英文残留（专有词白名单：reviewdeck/patch/diff/Split/Unified/Rewrite/Code/Wrap 按钮文案、Git/NAP/RD_* 等）（用户核对）                                     |
+| AC-W3 | 背景白、border ≈ #e5e5e5、primary 近黑；diff 区域 github-light 白底高亮（`color-scheme: light` 生效）；annotation/rw/file-toolbar/comment-progress/scrollbar 无深色残留（用户核对） |
+| AC-W4 | 四份 skill/prompt 文档含明确中文输出要求且示例中文化（文本审查）；下次真实评审 draftComments/description 为中文（用户配合）                                                         |
+| AC-W5 | 侧栏长描述 patch 项完整多行展示、不截断，hover 有 tooltip（用户核对）                                                                                                               |
+| AC-W6 | 进度条 chips 带文字"已包含/待定/已省略"，悬停有语义说明（用户核对）                                                                                                                 |
+| AC-W7 | 评论表单与 ChatPanel 快捷键提示同时含 ⌘↵ 与 Ctrl+↵（用户核对）                                                                                                                      |
+| AC-W8 | 窄窗口下 REVIEW 行不换行（用户核对）                                                                                                                                                |
+| AC-W9 | 齿轮位于 REVIEW 行右侧；popover 含自动换行开关与 Split/Unified 切换；改动即时生效并持久化（刷新后保持）；侧栏顶部原按钮组已移除（用户核对）                                         |
+
+## 16. 验收记录（T9 结束后回填）
+
+| AC    | 结果   | 证据 | 日期 |
+| ----- | ------ | ---- | ---- |
+| AC-W1 | 待验收 |      |      |
+| AC-W2 | 待验收 |      |      |
+| AC-W3 | 待验收 |      |      |
+| AC-W4 | 待验收 |      |      |
+| AC-W5 | 待验收 |      |      |
+| AC-W6 | 待验收 |      |      |
+| AC-W7 | 待验收 |      |      |
+| AC-W8 | 待验收 |      |      |
+| AC-W9 | 待验收 |      |      |
