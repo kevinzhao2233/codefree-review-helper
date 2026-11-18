@@ -925,6 +925,8 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
   const [rewriteExpansions, setRewriteExpansions] = useState<Set<string>>(new Set());
   const [submitted, setSubmitted] = useState(false);
   const [submittedCount, setSubmittedCount] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [viewedFiles, setViewedFiles] = useState<Map<number, Set<string>>>(new Map());
   const prevAllViewedRef = useRef(false);
 
@@ -1003,10 +1005,19 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
   );
 
   const handleSubmit = useCallback(async () => {
-    if (onSubmit) await onSubmit(submission);
-    setSubmittedCount(submission.comments.length);
-    setSubmitted(true);
-  }, [submission, onSubmit]);
+    if (submitting || submitted) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      if (onSubmit) await onSubmit(submission);
+      setSubmittedCount(submission.comments.length);
+      setSubmitted(true);
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSubmitting(false);
+    }
+  }, [submission, onSubmit, submitting, submitted]);
 
   const toggleViewed = useCallback((subIndex: number, fileName: string) => {
     setViewedFiles((prev) => {
@@ -1366,13 +1377,39 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
         </div>
 
         <div className="border-t border-border p-3">
-          <Button variant="default" className="w-full gap-2" onClick={handleSubmit}>
+          <Button
+            variant="default"
+            className="w-full gap-2"
+            onClick={handleSubmit}
+            disabled={submitting}
+          >
             <ArrowUp className="size-3.5" />
-            <span className="font-[family-name:var(--font-mono)] text-xs tracking-wide">提交</span>
+            <span className="font-[family-name:var(--font-mono)] text-xs tracking-wide">
+              {submitError ? "重试" : "提交"}
+            </span>
             <Badge variant="default" size="sm">
               {submission.comments.length}
             </Badge>
           </Button>
+          {submitting && (
+            <p className="mt-2 font-[family-name:var(--font-mono)] text-[11px] text-muted-foreground">
+              提交中…
+            </p>
+          )}
+          {submitError && (
+            <div className="mt-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5">
+              <p className="text-[11px] font-semibold text-destructive">评审提交失败</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-foreground/80">
+                评审服务可能已停止（例如被超时终止）。你的评论仍保留在本页面。
+              </p>
+              <p className="mt-1 text-[11px] leading-relaxed text-foreground/80">
+                请回到 CodeFree 会话，让 agent 重启评审服务后再点"重试"。
+              </p>
+              <p className="mt-1 font-[family-name:var(--font-mono)] text-[10px] text-destructive/70">
+                {submitError}
+              </p>
+            </div>
+          )}
           <p className="mt-2 text-[11px] text-muted-foreground">
             提交会发送已接受的 AI 草稿和你的评论；被拒绝的草稿不会发送。
           </p>

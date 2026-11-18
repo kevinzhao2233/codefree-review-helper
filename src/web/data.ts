@@ -39,9 +39,12 @@ export async function submitReview(
   submission: ReviewSubmission,
   opts: DataOptions = {},
 ): Promise<void> {
-  await fetch(buildUrl("/api/submit", opts), {
+  const res = await fetch(buildUrl("/api/submit", opts), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(submission),
   });
+  if (!res.ok) {
+    throw new Error(`提交评审失败：HTTP ${res.status}`);
+  }
 }
