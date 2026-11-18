@@ -1458,19 +1458,29 @@ function SettingsPopover({
         <Settings2 className="size-3.5" />
       </button>
       {open && (
-        <div className="absolute right-0 top-9 z-50 w-80 rounded-md border border-border bg-popover p-3.5 text-popover-foreground shadow-[0_4px_16px_oklch(0/0/0/0.4)]">
+        <div className="absolute right-0 top-9 z-50 w-64 rounded-md border border-border bg-popover p-3 text-popover-foreground shadow-[0_4px_16px_oklch(0/0/0/0.4)]">
           <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
             视图设置
           </div>
-          <label className="mt-3.5 flex cursor-pointer items-center justify-between text-xs">
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={wrap}
+            onClick={() => onWrapChange(!wrap)}
+            className="mt-3.5 flex w-full cursor-pointer select-none items-center justify-between rounded text-left text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
             长行自动换行
-            <input
-              type="checkbox"
-              checked={wrap}
-              onChange={(e) => onWrapChange(e.target.checked)}
-              className="size-3.5"
-            />
-          </label>
+            <span
+              className={cn(
+                "flex size-3.5 shrink-0 items-center justify-center rounded-[4px] border transition-colors",
+                wrap
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card hover:border-foreground/30",
+              )}
+            >
+              {wrap && <Check className="size-3" strokeWidth={3.5} />}
+            </span>
+          </button>
           <div className="mt-3.5 flex items-center justify-between gap-3 text-xs">
             <span>对比视图</span>
             <div className="inline-flex rounded-md border border-border bg-background/70 p-1">
