@@ -1,6 +1,6 @@
-# reviewdeck
+# codefree-review-helper
 
-Split large PR diffs into reviewable sub-patches via LLM-assigned groups.
+Split large PR/MR diffs into reviewable sub-patches via LLM-assigned groups. CodeFree + 研发云 only; local CLI form. (原名 reviewdeck，2026-11 起更名。)
 
 ## Toolchain: Vite+
 
@@ -29,7 +29,9 @@ npm run lint   # runs: vp test && vp check && knip && depcruise
 
 Release flow is Git-based. Do not run `npm publish` locally for this repo.
 
-For a normal release:
+> **npm 发布暂停（2026-11-18 用户决策）**：不 bump 版本、不打 tag、不发布、不迁移 npm registry 上的 `reviewdeck` 包，直到用户明确解除。`exports "./ui"`（`dist/ui/reviewdeck-ui.js`）为 npm 冻结项，保留原名。
+
+正常发布流程（解冻后适用）：
 
 - bump the version in `package.json` and `package-lock.json`
 - run release checks locally, typically `npm test`, `npm run build`, and `npm run pack:dry-run`
@@ -44,12 +46,9 @@ Publishing to npm is handled by GitHub Actions after the tag is pushed.
 ```
 L0  src/core/       Pure computation — zero I/O, zero external deps
 L1  src/cli/        CLI entry point — file I/O, git, process control
-L2  src/web/        Web UI + API server (future)
-    skills/         Published agent skills for `npx skills add`
-    nap/            App Spec, prompt and skill of the per-user review agent on NAP (deploy.ts publishes them)
+L2  src/web/        Review web UI (render 的浏览器评审界面)
+    skills/         codefree-review-helper skill（仅限 CodeFree 环境）
 ```
-
-`src/service/nap/` is the server's side of NAP: provisioning users, their agent workspace, and handing submitted reviews back to the agent's conversation. Secrets for running it live outside the repo (`~/.config/reviewdeck/server.env`).
 
 ### Dependency rules (enforced by dependency-cruiser)
 
