@@ -567,3 +567,107 @@ T3 已验证 AC：AC-2.1（单页场景）、AC-2.2、AC-2.3（4 文件全量）
 | "长行自动换行"复选框样式与项目不统一（裸 `<input>` 浏览器原生样式）   | 改为项目手写 shadcn 风格：`role="checkbox"` 按钮 + lucide `Check` 图标（未选 border-border bg-card、选中 bg-primary），零新依赖，键盘可达（Space）                                                                                                        | 已修复 |
 
 **最终结论（2026-11-18 用户确认）**：本迭代完成。用户视觉检查项（W-1/W-2/W-3/W-5/W-6/W-7/W-8/W-9）全部通过；W-4 指令与示例已落地，实际中文输出留待下次真实 MR 评审验证。
+
+## 17. 项目转型：改名 codefree-review-helper、删除 NAP、聚焦本地 CLI（2026-11-18 立项）
+
+### 17.1 需求（用户原话归纳）
+
+1. 项目更名：`reviewdeck` → `codefree-review-helper`，未来永远基于 CodeFree 和研发云迭代；
+2. skill 中注明：**当前运行软件不是 CodeFree 则不能使用**；
+3. 删除 NAP 相关能力（多用户应用形态），只保留本地 CLI 形式；
+4. 删除原始 `skills/reviewdeck`（GitHub 通用版 skill）；
+5. README.md 改为中文；
+6. **npm 包暂时不动**（用户未想好）：不打 tag、不发布、不迁移 npm registry。
+
+### 17.2 调研结论（影响面）
+
+- `render` 命令完全独立（`src/cli/render.ts` 用 `node:http` 静态服务，不依赖 service），删 service 不影响本地评审链路；
+- `src/service/` 整目录仅服务于 `serve` 子命令（`src/cli/main.ts:52-56` 唯一入口）；
+- NAP 形态牵连：`nap/`（5 文件）、`src/service/`（全部）、`src/web/app/`（AppShell/ChatPanel/api/session）、`app.tsx` 的 `/app` 分支、`Dockerfile`（serve 容器化）、`app.css` 的 `chat-md` 块与 NAP UI SDK token；
+- 全仓 `reviewdeck` 品牌引用 38 个文件（含即将删除的 NAP/service/skills 副本，实际改名面远小）。
+
+### 17.3 方案
+
+#### 17.3.1 删除清单（T11）
+
+| 对象                      | 处理                                                                                                                                                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nap/` 整目录             | 删除（deploy.ts/prompt.md/spec.ts/skills/reviewdeck/forge.py）                                                                                                                                                            |
+| `src/service/` 整目录     | 删除（serve/server/auth/mcp/nap/routes/storage/build-review 及其 4 个测试）                                                                                                                                               |
+| `src/web/app/` 整目录     | 删除（AppShell.tsx/ChatPanel.tsx/api.ts/session.ts）                                                                                                                                                                      |
+| `src/web/app.tsx`         | 简化为仅渲染 ReviewDeck（去 `/app` 分支与 AppShell import）                                                                                                                                                               |
+| `src/cli/main.ts`         | 删 `serve` 分支与 usage 中 serve 段                                                                                                                                                                                       |
+| `Dockerfile`              | 删除（serve 专用容器，本地 CLI 不需要）                                                                                                                                                                                   |
+| `app.css`                 | 删 `chat-md` 块、`--text-mini`/`--text-tiny`（NAP UI SDK 专用 token）                                                                                                                                                     |
+| `knip.json`               | entry 删 `src/service/serve.ts`、`nap/deploy.ts`、不存在的 `vite.config.inline.ts`；project 删 `nap/**`                                                                                                                   |
+| `.dependency-cruiser.cjs` | 删 service 相关 3 条规则（`cli-no-upper-layers` 的 service 例外、`main-only-serve-entry`、`service-no-upper-layers`）                                                                                                     |
+| 依赖                      | 删 service/NAP 专用：`@hono/mcp`、`@hono/node-server`、`@modelcontextprotocol/sdk`、`hono`、`jose`、`postgres`、`@neutree-ai/server-sdk`、`@neutree-ai/ui-sdk`、`zustand`、`i18next`、`react-i18next`（以 knip 验证为准） |
+| 测试基线                  | `vp test` 用例数随 service 测试删除而下降，全绿即可                                                                                                                                                                       |
+
+#### 17.3.2 改名映射（T12）
+
+| 位置                                       | 现值                                                | 新值                                                        |
+| ------------------------------------------ | --------------------------------------------------- | ----------------------------------------------------------- |
+| `package.json` name                        | `reviewdeck`                                        | `codefree-review-helper`（仅本地 git，不发布）              |
+| bin 命令                                   | `reviewdeck`                                        | `codefree-review-helper`                                    |
+| `build:cli` 产物                           | `dist/reviewdeck.mjs`                               | `dist/codefree-review-helper.mjs`                           |
+| `files`                                    | `skills/reviewdeck`                                 | `skills/codefree-review-helper`                             |
+| CLI usage 文案                             | 英文                                                | 中文（顺带，与 render.ts 风格一致）                         |
+| `src/web/index.html` title                 | `reviewdeck 评审`                                   | `codefree-review-helper 评审`                               |
+| skill 目录                                 | `skills/codefree-reviewdeck`                        | `skills/codefree-review-helper`                             |
+| SKILL.md `name:`                           | `codefree-reviewdeck`                               | `codefree-review-helper`（frontmatter name 不含中文与空格） |
+| skill 内命令示例                           | `reviewdeck`/`reviewdeck.mjs`                       | 新命令名                                                    |
+| `codefree` skill references 头部           | "本文件是 skills/reviewdeck/references/*.md 的副本" | 原文件已删，注释改为"本仓库专属参考文件"                    |
+| `src/core/types.ts`、`render.test.ts` 注释 | reviewdeck 措辞                                     | 新名                                                        |
+
+**明确保留（不改名）**：
+
+- React 组件名 `ReviewDeck` / 类型 `ReviewDeckProps`（内部实现名，避免无意义 churn）；
+- `exports "./ui"` 与 `dist/ui/reviewdeck-ui.js`、`lib-entry.ts`、`build:ui`（npm 冻结项，待用户 npm 决策后统一处理）；
+- `homepage`/`repository` 字段（仓库迁移未定）。
+
+#### 17.3.3 skill 限制条款（T13）
+
+`skills/codefree-review-helper/SKILL.md` 开头（frontmatter description + 正文第一节前）加醒目限制：
+
+> **环境限制：本 skill 仅可在 CodeFree 中使用。** 如果当前加载你的软件不是 CodeFree（例如 ClaudeCode、Cursor、Cline 等），你不能使用本 skill：直接告知用户"该 skill 仅支持 CodeFree 环境"并停止，不执行任何步骤。
+
+frontmatter `description` 同步注明"仅限 CodeFree 环境"。
+
+#### 17.3.4 README 中文化 + AGENTS.md 更新（T14）
+
+- `README.md` 全文中文重写：定位（CodeFree + 研发云 MR/PR 评审助手、本地 CLI）、环境限制声明、安装（本地构建）、使用流程（index → split → render → 回帖）、开发/测试/检查命令；删除 NAP 章节、`npx skills add` 章节与英文内容；
+- `AGENTS.md`：架构图更新（L0 core / L1 cli / L2 web-评审界面；删 nap 与 service 层说明）、dependency-cruiser 规则描述同步、release 段加"npm 发布暂停（用户决策中），不得打 tag/publish"。
+
+### 17.4 任务拆分与提交
+
+| 任务 | 内容                                                      | commit message                         |
+| ---- | --------------------------------------------------------- | -------------------------------------- |
+| T11  | 删除 NAP/serve/service 与配置同步（§17.3.1 全表）         | `T11: 删除 NAP 与 serve 服务端`        |
+| T12  | 改名 codefree-review-helper + CLI usage 中文化（§17.3.2） | `T12: 项目改名 codefree-review-helper` |
+| T13  | skill 加 CodeFree-only 限制条款                           | `T13: skill 增加 CodeFree 环境限制`    |
+| T14  | README 中文重写 + AGENTS.md 更新                          | `T14: README 中文化与 AGENTS 架构更新` |
+
+### 17.5 验收标准（AC）
+
+| #       | 标准                                                                                                                                          |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| AC-17.1 | `nap/`、`src/service/`、`src/web/app/`、`Dockerfile`、`skills/reviewdeck/` 不存在；`main.ts` 无 serve 分支                                    |
+| AC-17.2 | `vp test` 全绿；`npm run lint`（vp check + knip + depcruise）通过；service 专用依赖已从 package.json 移除                                     |
+| AC-17.3 | `git grep -i reviewdeck` 结果仅剩允许清单：`ReviewDeck` 组件名、`reviewdeck-ui.js`（npm 冻结）、`docs/`（历史记录）、AGENTS.md 中仓库历史说明 |
+| AC-17.4 | SKILL.md 开头含环境限制条款；非 CodeFree 环境声明不可用并停止                                                                                 |
+| AC-17.5 | README.md 全中文且无 NAP/`npx skills add` 内容；AGENTS.md 架构图与实际目录一致                                                                |
+| AC-17.6 | 端到端冒烟：`index → split → render` 本地起界面正常（复用 T4 测试数据）                                                                       |
+| AC-17.7 | 明确排除项：不打 tag、不 `npm publish`、不改 npm registry 上的包                                                                              |
+
+### 17.6 验收记录（回填处）
+
+| AC      | 结果   | 证据 | 日期 |
+| ------- | ------ | ---- | ---- |
+| AC-17.1 | 待验收 |      |      |
+| AC-17.2 | 待验收 |      |      |
+| AC-17.3 | 待验收 |      |      |
+| AC-17.4 | 待验收 |      |      |
+| AC-17.5 | 待验收 |      |      |
+| AC-17.6 | 待验收 |      |      |
+| AC-17.7 | 待验收 |      |      |
