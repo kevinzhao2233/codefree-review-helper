@@ -20,14 +20,10 @@ export interface SubPatch {
 export interface DataOptions {
   /** Base URL for API requests (default: current origin) */
   baseUrl?: string;
-  /** Review token for service-mode authentication */
-  token?: string;
 }
 
 function buildUrl(path: string, opts: DataOptions): string {
-  const base = opts.baseUrl ?? "";
-  const url = `${base}${path}`;
-  return opts.token ? `${url}?token=${encodeURIComponent(opts.token)}` : url;
+  return `${opts.baseUrl ?? ""}${path}`;
 }
 
 export async function fetchPatches(opts: DataOptions = {}): Promise<SubPatch[]> {

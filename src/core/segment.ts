@@ -153,7 +153,7 @@ function cut(lines: Line[], header: string[]): PatchSegment[] {
 /** Hunks of a segment, one per original hunk it touches, renumbered. */
 function hunks(part: Line[], startsHunk: boolean): string[] {
   const out: string[] = [];
-  for (let k = 0; k < part.length; ) {
+  for (let k = 0; k < part.length;) {
     let j = k;
     while (j < part.length && part[j]!.hunk === part[k]!.hunk) j++;
     const lines = part.slice(k, j);

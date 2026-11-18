@@ -1,18 +1,14 @@
 {
   "entry": [
-    "src/cli/main.ts",
-    "src/service/serve.ts",
     "src/web/app.tsx",
     "src/web/lib-entry.ts",
     "src/web/vite.config.ts",
-    "src/web/vite.config.lib.ts",
-    "src/web/vite.config.inline.ts",
-    "nap/deploy.ts"
+    "src/web/vite.config.lib.ts"
   ],
-  "project": ["src/**/*.ts", "src/**/*.tsx", "nap/**/*.ts"],
+  "project": ["src/**/*.ts", "src/**/*.tsx"],
   "vitest": {
     "entry": ["src/**/*.test.ts"]
   },
-  "ignoreDependencies": ["vitest", "vite", "tailwindcss", "tw-animate-css"],
+  "ignoreDependencies": ["vite", "tailwindcss", "tw-animate-css"],
   "ignoreExportsUsedInFile": true
 }

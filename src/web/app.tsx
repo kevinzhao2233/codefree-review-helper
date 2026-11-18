@@ -3,18 +3,16 @@ import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ReviewDeck, type SubPatch } from "./components/review/ReviewDeck";
 import { fetchPatches, submitReview } from "./data";
-import { AppShell } from "./app/AppShell";
 
 function App() {
   const [patches, setPatches] = useState<SubPatch[] | null>(null);
   const [error, setError] = useState<string>();
-  const token = new URLSearchParams(window.location.search).get("token") ?? undefined;
 
   useEffect(() => {
-    fetchPatches({ token })
+    fetchPatches()
       .then(setPatches)
       .catch((e) => setError(e.message));
-  }, [token]);
+  }, []);
 
   if (error) {
     return (
@@ -31,7 +29,7 @@ function App() {
       <div className="flex h-screen flex-col items-center justify-center gap-3">
         <div className="animate-pulse-dot size-2 rounded-full bg-primary" />
         <span className="font-[family-name:var(--font-mono)] text-xs tracking-widest text-muted-foreground">
-          LOADING
+          加载中…
         </span>
       </div>
     );
@@ -39,16 +37,9 @@ function App() {
 
   return (
     <div className="h-screen">
-      <ReviewDeck
-        patches={patches}
-        onSubmit={(submission) => submitReview(submission, { token })}
-      />
+      <ReviewDeck patches={patches} onSubmit={(submission) => submitReview(submission)} />
     </div>
   );
 }
 
-// The service's app lives under /app; everything else (a review link, or the
-// CLI's local render at /) is a single review deck.
-const isApp = window.location.pathname === "/app" || window.location.pathname.startsWith("/app/");
-
-createRoot(document.getElementById("root")!).render(isApp ? <AppShell /> : <App />);
+createRoot(document.getElementById("root")!).render(<App />);

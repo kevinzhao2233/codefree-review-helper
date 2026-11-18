@@ -285,12 +285,3 @@ export function reconstructBase(patches: FilePatch[]): FileContents {
 
   return base;
 }
-
-export function filesTouchedByPatches(patches: FilePatch[]): string[] {
-  const files = new Set<string>();
-  for (const fp of patches) {
-    if (fp.srcFile && fp.srcFile !== "/dev/null") files.add(fp.srcFile);
-    if (fp.dstFile && fp.dstFile !== "/dev/null") files.add(fp.dstFile);
-  }
-  return [...files].sort();
-}
