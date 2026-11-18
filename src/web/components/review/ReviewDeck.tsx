@@ -6,7 +6,7 @@ import {
   MessageSquare,
   Columns2,
   Rows3,
-  WrapText,
+  Settings2,
   ArrowUp,
   Check,
   Eye,
@@ -223,7 +223,7 @@ function CommentStatusCard({
   if (compact) {
     return (
       <div
-        title={`${title}：已包含 ${counts.included}，待定 ${counts.pending}，已省略 ${counts.omitted}`}
+        title={`${title}：已接受 ${counts.included}，待定 ${counts.pending}，已拒绝 ${counts.omitted}`}
       >
         <div className="comment-progress-track overflow-hidden rounded-full">
           {counts.totalDrafts > 0 ? (
@@ -257,7 +257,7 @@ function CommentStatusCard({
 
   if (minimal) {
     return (
-      <div title={`已包含 ${counts.included}，待定 ${counts.pending}，已省略 ${counts.omitted}`}>
+      <div title={`已接受 ${counts.included}，待定 ${counts.pending}，已拒绝 ${counts.omitted}`}>
         <div className="comment-progress-track overflow-hidden rounded-full">
           {counts.totalDrafts > 0 ? (
             <>
@@ -285,17 +285,17 @@ function CommentStatusCard({
           )}
         </div>
         <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
-          <span className="comment-progress-chip">
+          <span className="comment-progress-chip" title="已接受：将随提交发送">
             <span className="comment-progress-dot comment-progress-dot-included" />
-            {counts.included}
+            已接受 {counts.included}
           </span>
-          <span className="comment-progress-chip">
+          <span className="comment-progress-chip" title="待定：尚未决策，不会随提交发送">
             <span className="comment-progress-dot comment-progress-dot-pending" />
-            {counts.pending}
+            待定 {counts.pending}
           </span>
-          <span className="comment-progress-chip">
+          <span className="comment-progress-chip" title="已拒绝：不会发送">
             <span className="comment-progress-dot comment-progress-dot-omitted" />
-            {counts.omitted}
+            已拒绝 {counts.omitted}
           </span>
         </div>
       </div>
@@ -337,17 +337,17 @@ function CommentStatusCard({
         )}
       </div>
       <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
-        <span className="comment-progress-chip">
+        <span className="comment-progress-chip" title="已接受：将随提交发送">
           <span className="comment-progress-dot comment-progress-dot-included" />
-          {counts.included} 已包含
+          已接受 {counts.included}
         </span>
-        <span className="comment-progress-chip">
+        <span className="comment-progress-chip" title="待定：尚未决策，不会随提交发送">
           <span className="comment-progress-dot comment-progress-dot-pending" />
-          {counts.pending} 待定
+          待定 {counts.pending}
         </span>
-        <span className="comment-progress-chip">
+        <span className="comment-progress-chip" title="已拒绝：不会发送">
           <span className="comment-progress-dot comment-progress-dot-omitted" />
-          {counts.omitted} 已省略
+          已拒绝 {counts.omitted}
         </span>
       </div>
     </div>
@@ -1247,57 +1247,20 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
     <div className="flex h-full bg-background text-foreground">
       <nav className="flex w-72 shrink-0 flex-col border-r border-border bg-card">
         <div className="flex items-center justify-between px-4 pb-3 pt-5">
-          <div>
-            <h1 className="font-[family-name:var(--font-mono)] text-[11px] font-medium tracking-[0.2em] text-muted-foreground">
+          <div className="min-w-0">
+            <h1 className="whitespace-nowrap font-[family-name:var(--font-mono)] text-[11px] font-medium tracking-[0.2em] text-muted-foreground">
               评审
             </h1>
-            <p className="mt-0.5 font-[family-name:var(--font-mono)] text-xs text-muted-foreground/50">
+            <p className="mt-0.5 whitespace-nowrap font-[family-name:var(--font-mono)] text-xs text-muted-foreground/50">
               {patches.length} 个 patch
             </p>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <button
-              onClick={() => setWrap((w) => !w)}
-              className={cn(
-                "flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider shadow-[0_1px_2px_oklch(0/0/0/0.05)] transition-colors",
-                wrap
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-background/70 text-muted-foreground hover:bg-surface hover:text-foreground",
-              )}
-              title={wrap ? "关闭长行自动换行" : "长行自动换行"}
-            >
-              <WrapText className="size-3" />
-              Wrap
-            </button>
-            <div className="inline-flex rounded-md border border-border bg-background/70 p-1 shadow-[0_1px_2px_oklch(0/0/0/0.05)]">
-              <button
-                onClick={() => setDiffStyle("split")}
-                className={cn(
-                  "flex items-center gap-1.5 rounded px-2.5 py-1.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider transition-colors",
-                  diffStyle === "split"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-surface hover:text-foreground",
-                )}
-                title="分栏对比视图"
-              >
-                <Columns2 className="size-3" />
-                Split
-              </button>
-              <button
-                onClick={() => setDiffStyle("unified")}
-                className={cn(
-                  "flex items-center gap-1.5 rounded px-2.5 py-1.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider transition-colors",
-                  diffStyle === "unified"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-surface hover:text-foreground",
-                )}
-                title="合并对比视图"
-              >
-                <Rows3 className="size-3" />
-                Unified
-              </button>
-            </div>
-          </div>
+          <SettingsPopover
+            wrap={wrap}
+            onWrapChange={setWrap}
+            diffStyle={diffStyle}
+            onDiffStyleChange={setDiffStyle}
+          />
         </div>
 
         {globalCommentCounts.totalDrafts > 0 && (
@@ -1329,6 +1292,7 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
               <button
                 key={patch.index}
                 onClick={() => setActiveSub(patch.index)}
+                title={patch.description}
                 className={cn(
                   "animate-fade-in-up group relative flex w-full items-start gap-3 rounded-md px-2 py-2.5 text-left transition-all duration-150",
                   isActive ? "bg-surface" : "hover:bg-surface/50",
@@ -1356,7 +1320,7 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
                 <div className="min-w-0 flex-1 pt-px">
                   <span
                     className={cn(
-                      "block truncate text-[13px] leading-snug transition-colors",
+                      "block break-words text-[13px] leading-snug transition-colors",
                       stepDone
                         ? "text-muted-foreground line-through decoration-muted-foreground/30"
                         : isActive
@@ -1385,9 +1349,9 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
                         </span>
                       )}
                       {commentCounts.human > 0 && <span>{commentCounts.human} 条人工</span>}
-                      {commentCounts.included > 0 && <span>已包含 {commentCounts.included}</span>}
+                      {commentCounts.included > 0 && <span>已接受 {commentCounts.included}</span>}
                       {commentCounts.pending > 0 && <span>待定 {commentCounts.pending}</span>}
-                      {commentCounts.omitted > 0 && <span>已省略 {commentCounts.omitted}</span>}
+                      {commentCounts.omitted > 0 && <span>已拒绝 {commentCounts.omitted}</span>}
                     </span>
                   )}
                   {isActive && activeCommentCounts.totalDrafts > 0 && (
@@ -1439,6 +1403,105 @@ export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
           )}
         </div>
       </main>
+    </div>
+  );
+}
+
+/**
+ * View settings behind a gear button in the sidebar header: line wrap and
+ * diff style. Hand-rolled popover: click-outside and Escape close it.
+ */
+function SettingsPopover({
+  wrap,
+  onWrapChange,
+  diffStyle,
+  onDiffStyleChange,
+}: {
+  wrap: boolean;
+  onWrapChange: (wrap: boolean) => void;
+  diffStyle: "unified" | "split";
+  onDiffStyleChange: (style: "unified" | "split") => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative shrink-0" ref={rootRef}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        title="视图设置"
+        aria-label="视图设置"
+        aria-expanded={open}
+        className={cn(
+          "flex size-7 items-center justify-center rounded-md border border-border transition-colors",
+          open
+            ? "bg-primary text-primary-foreground"
+            : "bg-background/70 text-muted-foreground hover:bg-surface hover:text-foreground",
+        )}
+      >
+        <Settings2 className="size-3.5" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-9 z-50 w-56 rounded-md border border-border bg-popover p-3 text-popover-foreground shadow-[0_4px_16px_oklch(0/0/0/0.08)]">
+          <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+            视图设置
+          </div>
+          <label className="mt-3 flex cursor-pointer items-center justify-between text-xs">
+            长行自动换行
+            <input
+              type="checkbox"
+              checked={wrap}
+              onChange={(e) => onWrapChange(e.target.checked)}
+              className="size-3.5"
+            />
+          </label>
+          <div className="mt-3 text-xs">对比视图</div>
+          <div className="mt-1.5 inline-flex rounded-md border border-border bg-background/70 p-1">
+            <button
+              onClick={() => onDiffStyleChange("split")}
+              className={cn(
+                "flex items-center gap-1.5 rounded px-2.5 py-1 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider transition-colors",
+                diffStyle === "split"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-surface hover:text-foreground",
+              )}
+              title="分栏对比视图"
+            >
+              <Columns2 className="size-3" />
+              Split
+            </button>
+            <button
+              onClick={() => onDiffStyleChange("unified")}
+              className={cn(
+                "flex items-center gap-1.5 rounded px-2.5 py-1 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider transition-colors",
+                diffStyle === "unified"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-surface hover:text-foreground",
+              )}
+              title="合并对比视图"
+            >
+              <Rows3 className="size-3" />
+              Unified
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
