@@ -41,9 +41,9 @@ import type {
 import { rewriteCoverage } from "../../../core/split";
 import { segmentPatch, type PatchSegment } from "../../../core/segment";
 
-const DIFF_STYLE_STORAGE_KEY = "reviewdeck:review:diff-style";
-const DIFF_WRAP_STORAGE_KEY = "reviewdeck:review:diff-wrap";
-const READING_MODE_STORAGE_KEY = "reviewdeck:review:reading-mode";
+const DIFF_STYLE_STORAGE_KEY = "codefree-review-helper:review:diff-style";
+const DIFF_WRAP_STORAGE_KEY = "codefree-review-helper:review:diff-wrap";
+const READING_MODE_STORAGE_KEY = "codefree-review-helper:review:reading-mode";
 
 type ReadingMode = "rewrite" | "code";
 

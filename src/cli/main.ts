@@ -1,10 +1,10 @@
 /**
- * Unified CLI for reviewdeck.
+ * codefree-review-helper 统一 CLI。
  *
- * Usage:
- *   reviewdeck index <patch> [-o <file>]
- *   reviewdeck split <patch> <meta | -> [-o <dir>]
- *   reviewdeck render [<dir> | -]
+ * 用法：
+ *   codefree-review-helper index <patch> [-o <文件>]
+ *   codefree-review-helper split <patch> <meta | -> [-o <目录>]
+ *   codefree-review-helper render [<目录> | -]
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
@@ -55,25 +55,25 @@ switch (subcommand) {
 }
 
 function printUsage() {
-  console.error(`Usage:
-  reviewdeck index <patch> [-o <file>]
-      Generate a numbered change index from a PR diff for the LLM to group.
+  console.error(`用法：
+  codefree-review-helper index <patch> [-o <文件>]
+      从 PR diff 生成编号的变更索引，供 LLM 分组使用。
 
-  reviewdeck split <patch> <meta | -> [-o <dir>]
-      Generate and verify ordered sub-patches from the split metadata.
-      This proves the split composes back to the original diff.
-      Split metadata may also include draft review comments for render.
+  codefree-review-helper split <patch> <meta | -> [-o <目录>]
+      按 split 元数据生成并校验有序的子补丁。
+      校验子补丁按序组合 == 原 diff。
+      split 元数据中可附带草稿评审评论（draftComments），供 render 展示。
 
-  reviewdeck render [<dir> | -] [-p <port>]
-      Start the human review UI for the generated sub-patches.
-      Use this after "split" when the goal is to let a person review the stack.
-      It opens a browser and prints a submission JSON object to stdout.
+  codefree-review-helper render [<目录> | -] [-p <端口>]
+      为生成的子补丁启动人工评审界面。
+      在 "split" 之后使用，用于把切分结果交给人工评审。
+      会打开浏览器，提交后向 stdout 输出 submission JSON 对象。
 
-Examples:
+示例：
   gh pr diff 123 > pr.diff
-  reviewdeck index pr.diff > pr.index.txt
-  cat split.json | reviewdeck split pr.diff - -o output/
-  reviewdeck render output/`);
+  codefree-review-helper index pr.diff > pr.index.txt
+  cat split.json | codefree-review-helper split pr.diff - -o output/
+  codefree-review-helper render output/`);
 }
 
 function wantsHelp(args: string[]): boolean {
@@ -81,44 +81,42 @@ function wantsHelp(args: string[]): boolean {
 }
 
 function printIndexUsage() {
-  console.error(`Usage:
-  reviewdeck index <diff-file> [-o <output-file>]
+  console.error(`用法：
+  codefree-review-helper index <diff 文件> [-o <输出文件>]
 
-Generate a numbered change index from a PR diff.
-The index output is intended to be read by an LLM when producing split metadata.`);
+从 PR diff 生成编号的变更索引。
+索引输出供 LLM 生成 split 元数据时阅读。`);
 }
 
 function printSplitUsage() {
-  console.error(`Usage:
-  reviewdeck split <diff-file> <split-json | -> [-o <dir>]
+  console.error(`用法：
+  codefree-review-helper split <diff 文件> <split-json | -> [-o <目录>]
 
-Generate ordered sub-patches from split metadata and verify they compose
-back to the original diff.
+按 split 元数据生成有序子补丁，并校验其按序组合 == 原 diff。
 
-Split metadata can optionally include group-level "draftComments" so the
-review UI can render agent findings inline for accept/reject.
+split 元数据可选包含组级 "draftComments"，评审界面会将其作为
+agent 草稿评论内联展示，供评审人接受/拒绝。
 
-Experimental: group-level "rewrites" ([{ changes, title?, rewrite }]) replace
-the covered change lines with an equivalent, focused Markdown re-expression
-in the review UI; the code stays one click away.
+实验特性：组级 "rewrites"（[{ changes, title?, rewrite }]）在评审界面中
+用等价且更聚焦的 Markdown 表达替换被覆盖的变更行；代码始终一键可达。
 
-After a successful split, continue with "reviewdeck render" when the goal
-is to hand the proposed sub-patches to a human reviewer or collect comments.`);
+split 成功后，若目标是把子补丁交给人工评审或收集评论，
+请继续执行 "codefree-review-helper render"。`);
 }
 
 function printRenderUsage() {
-  console.error(`Usage:
-  reviewdeck render [<dir> | -] [-p <port>]
+  console.error(`用法：
+  codefree-review-helper render [<目录> | -] [-p <端口>]
 
-Prepare generated sub-patches for human review.
+为人工评审准备生成的子补丁。
 
-- Input can be a directory from "split -o" or stdin from "split"
-- Server mode opens a browser and waits for human review submission
-- Submission JSON includes final comments plus agent-draft accept/reject status
+- 输入可以是 "split -o" 输出的目录，或 "split" 的 stdin
+- 服务模式会打开浏览器并阻塞等待人工提交评审
+- 提交的 JSON 包含最终评论，以及 agent 草稿的接受/拒绝状态
 
-Examples:
-  reviewdeck render output/
-  cat split.json | reviewdeck split pr.diff - | reviewdeck render -`);
+示例：
+  codefree-review-helper render output/
+  cat split.json | codefree-review-helper split pr.diff - | codefree-review-helper render -`);
 }
 
 // ---------------------------------------------------------------------------
@@ -141,7 +139,7 @@ async function readFileOrStdin(path: string): Promise<string> {
 function coverageNote(sub: string, group: ResolvedSplitGroupMeta): string {
   if (!group.rewrites?.length) return "";
   const { total, covered } = rewriteCoverage(sub, group.rewrites);
-  return `; rewrites cover ${covered}/${total} changed lines`;
+  return `；改写覆盖 ${covered}/${total} 条变更行`;
 }
 
 function writeSubs(
@@ -155,7 +153,7 @@ function writeSubs(
       const outPath = `${outDir}/sub${i + 1}.diff`;
       writeFileSync(outPath, subs[i]!);
       const lineCount = subs[i]!.split("\n").length;
-      console.error(`  Wrote ${outPath} (${lineCount} lines${coverageNote(subs[i]!, groups[i]!)})`);
+      console.error(`  已写入 ${outPath}（${lineCount} 行${coverageNote(subs[i]!, groups[i]!)}）`);
     }
     // Write meta.json so render can read descriptions and draft review comments.
     const meta = groups.map((group) => ({
@@ -165,13 +163,13 @@ function writeSubs(
       rewrites: group.rewrites,
     }));
     writeFileSync(`${outDir}/meta.json`, JSON.stringify(meta, null, 2) + "\n");
-    console.error(`  Wrote ${outDir}/meta.json`);
+    console.error(`  已写入 ${outDir}/meta.json`);
     const coverage = subs.map((sub, i) => rewriteCoverage(sub, groups[i]!.rewrites));
     const covered = coverage.reduce((n, c) => n + c.covered, 0);
     if (covered > 0) {
       const total = coverage.reduce((n, c) => n + c.total, 0);
       console.error(
-        `  Rewrites cover ${covered}/${total} changed lines; ${total - covered} left to read as code.`,
+        `  改写覆盖 ${covered}/${total} 条变更行；其余 ${total - covered} 行仍以代码形式阅读。`,
       );
     }
   } else {
@@ -212,7 +210,7 @@ async function cmdIndex(args: string[]) {
 
   if (values.output) {
     writeFileSync(values.output, output);
-    console.error(`Wrote ${values.output} (${changes.length} changes)`);
+    console.error(`已写入 ${values.output}（${changes.length} 条变更）`);
   } else {
     process.stdout.write(output);
   }
@@ -247,15 +245,15 @@ async function cmdSplit(args: string[]) {
   try {
     meta = JSON.parse(metaRaw);
   } catch {
-    console.error(`ERROR: Invalid JSON in split metadata.
-The input must be a valid JSON object with this structure:
+    console.error(`错误：split 元数据不是合法 JSON。
+输入必须是符合以下结构的 JSON 对象：
 {
   "groups": [
     { "description": "...", "changes": [0, 1, "2-5"] }
   ]
 }
 
-Received: ${metaRaw.slice(0, 200)}${metaRaw.length > 200 ? "..." : ""}`);
+实际收到：${metaRaw.slice(0, 200)}${metaRaw.length > 200 ? "..." : ""}`);
     process.exit(1);
   }
 
@@ -265,18 +263,18 @@ Received: ${metaRaw.slice(0, 200)}${metaRaw.length > 200 ? "..." : ""}`);
   const errors = validateMeta(meta, changes.length);
 
   if (errors.length > 0) {
-    console.error(`ERROR: Invalid split metadata (${errors.length} issue${errors.length > 1 ? "s" : ""}):
+    console.error(`错误：split 元数据不合法（${errors.length} 个问题）：
 ${errors.map((e) => `  - ${e}`).join("\n")}
 
-Total change indices in this diff: 0-${changes.length - 1} (${changes.length} changes).
-Every index must appear in exactly one group. Fix the meta JSON and retry.`);
+本 diff 的变更编号范围：0-${changes.length - 1}（共 ${changes.length} 条变更）。
+每个编号必须恰好归入一个组。修正 meta JSON 后重试。`);
     process.exit(1);
   }
 
-  console.error(`Split: ${meta.groups.length} groups, ${changes.length} changes`);
+  console.error(`切分：${meta.groups.length} 组，${changes.length} 条变更`);
   for (let i = 0; i < meta.groups.length; i++) {
     const g = meta.groups[i]!;
-    console.error(`  ${i + 1}. ${g.description} (${g.changes.length} items)`);
+    console.error(`  ${i + 1}. ${g.description}（${g.changes.length} 项）`);
   }
 
   // Generate sub-patches
@@ -291,10 +289,10 @@ Every index must appear in exactly one group. Fix the meta JSON and retry.`);
     try {
       state = applyPatch(state, parsePatch(subs[i]!));
     } catch (e: any) {
-      console.error(`ERROR: Sub-patch #${i + 1} ("${meta.groups[i]!.description}") failed to apply: ${e.message}
+      console.error(`错误：子补丁 #${i + 1}（"${meta.groups[i]!.description}"）应用失败：${e.message}
 
-This usually means the changes in group ${i + 1} conflict with earlier groups.
-Check that the change indices in this group are correct and don't depend on changes in later groups.`);
+这通常意味着第 ${i + 1} 组的变更与更早的组冲突。
+请检查该组的变更编号是否正确、是否依赖了后面组里的变更。`);
       process.exit(1);
     }
   }
@@ -311,16 +309,16 @@ Check that the change indices in this group are correct and don't depend on chan
   }
 
   if (mismatches.length > 0) {
-    console.error(`ERROR: Composition mismatch — sub-patches do NOT reproduce the original diff.
-${mismatches.length} file(s) differ after applying all sub-patches sequentially:
+    console.error(`错误：组合校验失败——子补丁按序应用后与原 diff 不一致。
+${mismatches.length} 个文件在依次应用全部子补丁后存在差异：
 ${mismatches.map((f) => `  - ${f}`).join("\n")}
 
-This is likely a bug in the splitting algorithm. Please report it.`);
+这可能是切分算法的 bug，请反馈。`);
     process.exit(1);
   }
 
   // All good — output sub-patches
-  console.error("OK: Verified — sub-patches compose to equal the original diff.");
+  console.error("校验通过：子补丁按序组合 == 原 diff。");
   const rewrites = resolveGroupRewrites(meta, subs);
   const groupMeta = resolveSplitGroupMeta(meta, changes).map((group, i) => ({
     ...group,
@@ -329,9 +327,9 @@ This is likely a bug in the splitting algorithm. Please report it.`);
   writeSubs(subs, groupMeta, values.output);
 
   if (values.output) {
-    console.error(`Next: run "reviewdeck render ${values.output}" to review these sub-patches.`);
+    console.error(`下一步：执行 "codefree-review-helper render ${values.output}" 评审这些子补丁。`);
   } else {
-    console.error('Next: pipe this output into "reviewdeck render -" to launch review.');
+    console.error('下一步：把本输出通过管道传给 "codefree-review-helper render -" 启动评审。');
   }
 }
 
@@ -367,11 +365,11 @@ async function cmdRender(args: string[]) {
   }
 
   if (subPatches.length === 0) {
-    console.error("ERROR: No sub-patches to review.");
+    console.error("错误：没有可评审的子补丁。");
     process.exit(1);
   }
 
-  console.error(`Loaded ${subPatches.length} sub-patches for review.`);
+  console.error(`已加载 ${subPatches.length} 个子补丁。`);
 
   const port = values.port ? parseInt(values.port, 10) : undefined;
   const submission = await startReviewServer(subPatches, { port });

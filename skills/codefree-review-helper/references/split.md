@@ -1,6 +1,5 @@
 <!--
-  本文件是本仓库 skills/reviewdeck/references/split.md 的副本，
-  供 codefree-reviewdeck skill 独立安装使用；原文件更新时请同步本副本。
+  本文件是 codefree-review-helper skill 的专属参考文件。
 -->
 
 # Split Guidance

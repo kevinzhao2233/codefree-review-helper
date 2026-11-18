@@ -61,7 +61,7 @@ describe("parseSubPatchesFromDir", () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), "reviewdeck-test-"));
+    dir = mkdtempSync(join(tmpdir(), "codefree-review-helper-test-"));
   });
 
   afterEach(() => {

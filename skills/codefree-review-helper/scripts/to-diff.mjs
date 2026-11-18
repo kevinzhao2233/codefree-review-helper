@@ -113,7 +113,7 @@ for (let i = 0; i < entries.length; i++) {
     const oldCount = blk.ab.length + blk.a.length;
     const newCount = blk.ab.length + blk.b.length;
     if (oldCount === 0 && newCount === 0) continue;
-    // A 文件 srcStart 恒 0、D 文件 dstStart 恒 0（git 标准，也是 reviewdeck 切分器
+    // A 文件 srcStart 恒 0、D 文件 dstStart 恒 0（git 标准，也是 codefree-review-helper 切分器
     // 识别新文件/删除文件的依据，src/core/split.ts 的 fixHunkLineNumbers 与
     // generateSubPatches 依赖 -0,0 / +0,0 信号）；E 文件用真实指针行号
     const srcOut = type === "A" ? 0 : oldStart;

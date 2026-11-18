@@ -1,13 +1,13 @@
 ---
-name: codefree-reviewdeck
-description: 把研发云 MR（合并请求）的变更 diff 切成有序的评审卡片组，用 reviewdeck CLI 完成 index → split → render → 评论回帖的本地评审全流程。当用户贴出研发云 MR 链接、给出 repoFullName + mergeId、或说"帮我 review/评审这个 MR"时使用。
+name: codefree-review-helper
+description: 把研发云 MR（合并请求）的变更 diff 切成有序的评审卡片组，用 codefree-review-helper CLI 完成 index → split → render → 评论回帖的本地评审全流程。当用户贴出研发云 MR 链接、给出 repoFullName + mergeId、或说"帮我 review/评审这个 MR"时使用。
 metadata:
   version: "0.1"
 ---
 
-# codefree-reviewdeck：研发云 MR 评审
+# codefree-review-helper：研发云 MR 评审
 
-你协助一位评审人把研发云 MR 的大 diff 切成一组有序的小卡片，交给 reviewdeck 渲染评审；评审提交后，把评论发回该 MR。你协助评审，**不代替评审**：只有 diff 能支撑的具体问题才可作为草稿评论（draftComments）。
+你协助一位评审人把研发云 MR 的大 diff 切成一组有序的小卡片，交给 codefree-review-helper 渲染评审；评审提交后，把评论发回该 MR。你协助评审，**不代替评审**：只有 diff 能支撑的具体问题才可作为草稿评论（draftComments）。
 
 ## 0. 安全边界（最高优先级，先读这里）
 
@@ -32,12 +32,10 @@ metadata:
 同时确认 CLI 运行方式（用户环境约定，未约定时先问）：
 
 ```bash
-# 方式一（默认）：本地构建产物
+# 本地构建产物。
 # 本地构建需 build:cli（CLI 本体）+ build:web（render 的评审 UI，缺它 render 报
 # "Web UI not built"）。一次性执行 npm run build 即含两者。
-node <reviewdeck-dist>/reviewdeck.mjs <subcommand>
-# 方式二：npm 包
-npx reviewdeck@^0.6.0 <subcommand>
+node <codefree-review-helper-dist>/codefree-review-helper.mjs <subcommand>
 ```
 
 ## 2. 定位 MR
@@ -75,7 +73,7 @@ node <skill-dir>/scripts/to-diff.mjs <work-dir> -o review.diff
 ### 3.4 索引校验
 
 ```bash
-node <reviewdeck-dist>/reviewdeck.mjs index review.diff -o pr.index.txt
+node <codefree-review-helper-dist>/codefree-review-helper.mjs index review.diff -o pr.index.txt
 ```
 
 解析失败或 0 change：按 §3.3 的规则重试；diff 为空（MR 无变更）：明确报错并停止。
@@ -105,8 +103,8 @@ node <reviewdeck-dist>/reviewdeck.mjs index review.diff -o pr.index.txt
 ## 5. split 验证与 render
 
 ```bash
-node <reviewdeck-dist>/reviewdeck.mjs split review.diff split.json -o output/
-node <reviewdeck-dist>/reviewdeck.mjs render output/
+node <codefree-review-helper-dist>/codefree-review-helper.mjs split review.diff split.json -o output/
+node <codefree-review-helper-dist>/codefree-review-helper.mjs render output/
 ```
 
 - `split` 自带组合验证（子 patch 按序应用 == 原 diff）。失败时按报错修正 `split.json` 重试；
@@ -123,7 +121,7 @@ node <reviewdeck-dist>/reviewdeck.mjs render output/
 
 ### 6.2 去重
 
-对每条评论计算 marker = sha256(`sub|file|line|side|body`) 的前 16 位十六进制；先调 `search_mr_global_comment_list` + `search_mr_row_comment_list` 收集 MR 上已有评论中的 marker（形如 `<!-- reviewdeck:xxxxxxxxxxxxxxxx -->`），命中的跳过并计入"重复"。
+对每条评论计算 marker = sha256(`sub|file|line|side|body`) 的前 16 位十六进制；先调 `search_mr_global_comment_list` + `search_mr_row_comment_list` 收集 MR 上已有评论中的 marker（形如 `<!-- codefree-review-helper:xxxxxxxxxxxxxxxx -->`），命中的跳过并计入"重复"。
 
 ### 6.3 简报与确认
 
@@ -135,11 +133,11 @@ node <reviewdeck-dist>/reviewdeck.mjs render output/
 
 ### 6.4 发送映射
 
-| 评论             | 工具与参数                                                                                                                                                                                                                                                                                                                                |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `side=additions` | `add_mr_row_comment`：`filePath=file`，`startLine=endLine=line`（新文件 1-based 行号，与 submission 的 `line` 语义一致），`rowComment=<body>\n\n<!-- reviewdeck:<marker> -->`，`newThread=1`（**T4 实测必填**，缺省返回 `code 2005 必填参数不能为空`），附 `repoFullName`、`mergeId`、`branchName`、`commitId`、`diffType`（来源见 §6.5） |
-| `side=deletions` | `add_mr_global_comment`：正文 `**<file>:<line>（删除侧）**\n\n<body>\n\n<!-- reviewdeck:<marker> -->`                                                                                                                                                                                                                                     |
-| 行内发送失败     | 降级 `add_mr_global_comment`：正文 `**<file>:<line>**\n\n<body>\n\n<!-- reviewdeck:<marker> -->`，计入"降级"                                                                                                                                                                                                                              |
+| 评论             | 工具与参数                                                                                                                                                                                                                                                                                                                                            |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `side=additions` | `add_mr_row_comment`：`filePath=file`，`startLine=endLine=line`（新文件 1-based 行号，与 submission 的 `line` 语义一致），`rowComment=<body>\n\n<!-- codefree-review-helper:<marker> -->`，`newThread=1`（**T4 实测必填**，缺省返回 `code 2005 必填参数不能为空`），附 `repoFullName`、`mergeId`、`branchName`、`commitId`、`diffType`（来源见 §6.5） |
+| `side=deletions` | `add_mr_global_comment`：正文 `**<file>:<line>（删除侧）**\n\n<body>\n\n<!-- codefree-review-helper:<marker> -->`                                                                                                                                                                                                                                     |
+| 行内发送失败     | 降级 `add_mr_global_comment`：正文 `**<file>:<line>**\n\n<body>\n\n<!-- codefree-review-helper:<marker> -->`，计入"降级"                                                                                                                                                                                                                              |
 
 发送顺序按 comments 数组顺序逐条执行；单条失败不中断其余评论。
 

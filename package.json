@@ -1,5 +1,5 @@
 {
-  "name": "reviewdeck",
+  "name": "codefree-review-helper",
   "version": "0.6.2",
   "description": "Split large PR diffs into reviewable sub-patches via indexed groups.",
   "homepage": "https://github.com/neutree-ai/reviewdeck",
@@ -11,13 +11,13 @@
     "url": "https://github.com/neutree-ai/reviewdeck.git"
   },
   "bin": {
-    "reviewdeck": "dist/reviewdeck.mjs"
+    "codefree-review-helper": "dist/codefree-review-helper.mjs"
   },
   "files": [
-    "dist/reviewdeck.mjs",
+    "dist/codefree-review-helper.mjs",
     "dist/web",
     "dist/ui",
-    "skills/reviewdeck",
+    "skills/codefree-review-helper",
     "README.md"
   ],
   "type": "module",
@@ -32,7 +32,7 @@
     "check": "vp check",
     "check-deps": "depcruise src --config .dependency-cruiser.cjs",
     "knip": "knip",
-    "build:cli": "esbuild src/cli/main.ts --bundle --platform=node --format=esm --outfile=dist/reviewdeck.mjs --banner:js='#!/usr/bin/env node'",
+    "build:cli": "esbuild src/cli/main.ts --bundle --platform=node --format=esm --outfile=dist/codefree-review-helper.mjs --banner:js=\"#!/usr/bin/env node\"",
     "build:web": "vp build -c src/web/vite.config.ts",
     "build:ui": "vp build -c src/web/vite.config.lib.ts",
     "build": "npm run build:cli && npm run build:web && npm run build:ui",
