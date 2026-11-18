@@ -4,11 +4,12 @@
  * 用法：
  *   codefree-review-helper index <patch> [-o <文件>]
  *   codefree-review-helper split <patch> <meta | -> [-o <目录>]
- *   codefree-review-helper render [<目录> | -]
+ *   codefree-review-helper render [<目录> | -] [-p <端口>] [-o <文件>]
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { parsePatch, applyPatch, reconstructBase } from "../core/patch.ts";
 import {
@@ -64,10 +65,11 @@ function printUsage() {
       校验子补丁按序组合 == 原 diff。
       split 元数据中可附带草稿评审评论（draftComments），供 render 展示。
 
-  codefree-review-helper render [<目录> | -] [-p <端口>]
+  codefree-review-helper render [<目录> | -] [-p <端口>] [-o <文件>]
       为生成的子补丁启动人工评审界面。
       在 "split" 之后使用，用于把切分结果交给人工评审。
       会打开浏览器，提交后向 stdout 输出 submission JSON 对象。
+      目录模式下评审结果默认写入 <目录>/submission.json（-o 可覆盖）。
 
 示例：
   gh pr diff 123 > pr.diff
@@ -106,13 +108,16 @@ split 成功后，若目标是把子补丁交给人工评审或收集评论，
 
 function printRenderUsage() {
   console.error(`用法：
-  codefree-review-helper render [<目录> | -] [-p <端口>]
+  codefree-review-helper render [<目录> | -] [-p <端口>] [-o <文件>]
 
 为人工评审准备生成的子补丁。
 
 - 输入可以是 "split -o" 输出的目录，或 "split" 的 stdin
 - 服务模式会打开浏览器并阻塞等待人工提交评审
 - 提交的 JSON 包含最终评论，以及 agent 草稿的接受/拒绝状态
+- 评审结果落盘：目录模式默认写 <目录>/submission.json，-o <文件> 可覆盖；
+  stdin 模式仅在显式传 -o 时落盘
+- stdout 始终输出 submission JSON（后台运行时可重定向留存）
 
 示例：
   codefree-review-helper render output/
@@ -347,6 +352,7 @@ async function cmdRender(args: string[]) {
     args,
     options: {
       port: { type: "string", short: "p" },
+      output: { type: "string", short: "o" },
     },
     allowPositionals: true,
   });
@@ -372,7 +378,9 @@ async function cmdRender(args: string[]) {
   console.error(`已加载 ${subPatches.length} 个子补丁。`);
 
   const port = values.port ? parseInt(values.port, 10) : undefined;
-  const submission = await startReviewServer(subPatches, { port });
+  const submissionPath =
+    values.output ?? (source !== "-" ? resolve(source, "submission.json") : undefined);
+  const submission = await startReviewServer(subPatches, { port, submissionPath });
 
   // Output submission as JSON to stdout
   process.stdout.write(JSON.stringify(submission, null, 2));

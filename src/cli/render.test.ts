@@ -1,8 +1,15 @@
 import { describe, expect, it, beforeEach, afterEach } from "vite-plus/test";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { parseSubPatchesFromDir, parseSubPatchesFromStdin } from "./render.ts";
+import {
+  parseSubPatchesFromDir,
+  parseSubPatchesFromStdin,
+  startReviewServer,
+  type StartReviewServerOptions,
+  type SubPatch,
+} from "./render.ts";
+import type { ReviewSubmission } from "../core/types.ts";
 
 const SEPARATOR = "===SUB_PATCH===";
 
@@ -136,5 +143,117 @@ describe("parseSubPatchesFromDir", () => {
     return parseSubPatchesFromDir(dir).then((result) => {
       expect(result).toHaveLength(1);
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// startReviewServer
+// ---------------------------------------------------------------------------
+
+interface TestServer {
+  port: number;
+  url: string;
+  close: () => Promise<void>;
+  submission: Promise<ReviewSubmission>;
+}
+
+describe("startReviewServer", () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "codefree-review-helper-server-"));
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  const makeSubPatch = (): SubPatch => ({
+    index: 0,
+    description: "测试子补丁",
+    diff: fakeDiff("a.ts"),
+    draftComments: [],
+  });
+
+  const fakeSubmission = {
+    comments: [
+      { sub: 0, file: "a.ts", line: 3, side: "additions", body: "这里可能有问题", source: "human" },
+    ],
+    draftComments: [],
+  } as unknown as ReviewSubmission;
+
+  async function startTestServer(
+    opts: Partial<StartReviewServerOptions> = {},
+  ): Promise<TestServer> {
+    let handle!: TestServer;
+    await new Promise<void>((ready) => {
+      const submission = startReviewServer([makeSubPatch()], {
+        port: 0,
+        openBrowser: false,
+        ...opts,
+        onReady: (info) => {
+          handle = { ...info, submission };
+          ready();
+        },
+      });
+    });
+    return handle;
+  }
+
+  function postSubmit(port: number, body: string): Promise<Response> {
+    return fetch(`http://localhost:${port}/api/submit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+    });
+  }
+
+  it("提交后落盘且内容与 stdout JSON 一致", async () => {
+    const submissionPath = join(dir, "submission.json");
+    const server = await startTestServer({ submissionPath });
+
+    const res = await postSubmit(server.port, JSON.stringify(fakeSubmission));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+
+    const stdoutJson = await server.submission;
+    const onDisk = JSON.parse(readFileSync(submissionPath, "utf-8")) as unknown;
+    expect(onDisk).toEqual(stdoutJson);
+    expect(onDisk).toEqual(fakeSubmission);
+    expect(existsSync(`${submissionPath}.tmp`)).toBe(false);
+  });
+
+  it("非法 JSON 返回 400，之后仍可正常提交", async () => {
+    const server = await startTestServer({ submissionPath: join(dir, "submission.json") });
+
+    const bad = await postSubmit(server.port, "not-json");
+    expect(bad.status).toBe(400);
+    expect(await bad.json()).toEqual({ error: "非法 JSON" });
+
+    const good = await postSubmit(server.port, JSON.stringify(fakeSubmission));
+    expect(good.status).toBe(200);
+    expect(await server.submission).toEqual(fakeSubmission);
+  });
+
+  it("落盘失败返回 500 且服务器保持存活", async () => {
+    const submissionPath = join(dir, "nonexistent-dir", "submission.json");
+    const server = await startTestServer({ submissionPath });
+
+    const first = await postSubmit(server.port, JSON.stringify(fakeSubmission));
+    expect(first.status).toBe(500);
+
+    const second = await postSubmit(server.port, JSON.stringify(fakeSubmission));
+    expect(second.status).toBe(500);
+
+    await server.close();
+  });
+
+  it("未指定落盘路径时正常返回且不落盘", async () => {
+    const server = await startTestServer({});
+
+    const res = await postSubmit(server.port, JSON.stringify(fakeSubmission));
+    expect(res.status).toBe(200);
+    expect(await server.submission).toEqual(fakeSubmission);
+    expect(existsSync(join(dir, "submission.json"))).toBe(false);
   });
 });
