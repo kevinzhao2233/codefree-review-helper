@@ -815,15 +815,15 @@ AC 验收随各任务执行，结果统一回填 §18.6。
 
 ### 19.1 需求与用户决策
 
-| 决策点                 | 用户决策（2026-11-18）                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| npm 包名               | `codefree-review-helper`（npm 上未被占用，已确认可注册）                                                                                         |
-| 首版版本               | `1.0.0`                                                                                                                                          |
-| tag 位置               | 打在 `codefree` 分支 HEAD；`main` 不再演进（仅作历史保留）                                                                                       |
-| 旧 reviewdeck 品牌     | "尽量能改的都改"：含 `exports "./ui"` 产物改名 `reviewdeck-ui.js` → `codefree-review-helper-ui.js`（1.0.0 首发无存量用户，改名零 breaking 成本） |
-| license                | 上游无 LICENSE、本仓库也无：**本次不加**（版权判断留给用户，如需后续单独加）                                                                     |
-| 旧 `reviewdeck` npm 包 | 不做 deprecate/unpublish（不动旧包）                                                                                                             |
-| 发布机制               | 复用 `.github/workflows/publish.yml`（npm Trusted Publishing/OIDC，无 NPM_TOKEN secret；用户去 npmjs.com 配置包绑定）                            |
+| 决策点                 | 用户决策（2026-11-18）                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| npm 包名               | `codefree-review-helper`（npm 上未被占用，已确认可注册）                                                                                                                                                                                                                                                                                                                                                         |
+| 首版版本               | `1.0.0`                                                                                                                                                                                                                                                                                                                                                                                                          |
+| tag 位置               | 打在 `codefree` 分支 HEAD；`main` 不再演进（仅作历史保留）                                                                                                                                                                                                                                                                                                                                                       |
+| 旧 reviewdeck 品牌     | "尽量能改的都改"：含 `exports "./ui"` 产物改名 `reviewdeck-ui.js` → `codefree-review-helper-ui.js`（1.0.0 首发无存量用户，改名零 breaking 成本）                                                                                                                                                                                                                                                                 |
+| license                | 上游无 LICENSE、本仓库也无：**本次不加**（版权判断留给用户，如需后续单独加）                                                                                                                                                                                                                                                                                                                                     |
+| 旧 `reviewdeck` npm 包 | 不做 deprecate/unpublish（不动旧包）                                                                                                                                                                                                                                                                                                                                                                             |
+| 发布机制               | **保底路径（2026-11-19 实测）**：npmjs.com 无"预创建占位包"入口，包必须先经 `npm publish` 存在才能配置 Trusted Publishing → 首版 `1.0.0` 由用户本地手动发布（`npm login` + `npm publish`，不带 `--provenance`），随后用户在包 Settings 配置 Trusted Publishing（GitHub Actions，勾选允许 `npm publish`），后续版本走 CI（OIDC + provenance）；`publish.yml` 幂等化：版本已在 npm 上时跳过（补打历史 tag 不红叉） |
 
 ### 19.2 发布顺序决策（待用户审批时确认）
 
@@ -845,6 +845,7 @@ AC 验收随各任务执行，结果统一回填 §18.6。
 | `AGENTS.md`                                | Release 段解冻改写：`codefree-review-helper@1.0.0` 起以新包发布；`exports "./ui"` 产物已改名 `codefree-review-helper-ui.js`                                                                                   |
 | `README.md`                                | 安装段补 npm 包方式（`npm i -g codefree-review-helper` / `npx codefree-review-helper`）                                                                                                                       |
 | `skills/codefree-review-helper/SKILL.md`   | CLI 运行方式补 npm 备选：`npx codefree-review-helper@^1.0.0`                                                                                                                                                  |
+| `.github/workflows/publish.yml`            | 幂等化：`npm publish` 前用 `npm view codefree-review-helper@<version>` 检查，版本已存在则跳过（本地首发后补打 `v1.0.0` tag 不红叉）                                                                           |
 
 注：组件改名后，§18.2 方案 A 中 `ReviewDeck.tsx` 路径引用对应变为 `ReviewHelper.tsx`（T16 实施时若 T18 已先行，以实际路径为准）。
 
@@ -854,13 +855,15 @@ AC 验收随各任务执行，结果统一回填 §18.6。
 - `docs/design.md` 与 `AGENTS.md` 中的历史记录（"原名 reviewdeck"等）保留——历史事实，非使用行为；
 - 旧 npm 包 `reviewdeck`（上游/历史发布）不做任何操作。
 
-### 19.5 发布流程
+### 19.5 发布流程（保底路径，2026-11-19 实测调整）
 
-1. **用户（npmjs.com）**：为 `codefree-review-helper` 配置 Trusted Publishing，绑定 GitHub 仓库 `kevinzhao2233/reviewdeck` + workflow `.github/workflows/publish.yml`；
-2. **用户（GitHub）**：fork 仓库 Actions 页面启用 workflows；
-3. **代码侧（T18）**：§19.3 改动 → `npm run build`（三产物）→ `npm run pack:dry-run` 验证包内容（name/bin/files/exports/产物名）→ `vp test` 全绿；
-4. **打 tag**：`git tag v1.0.0`（codefree 分支对应 commit）→ push tag → publish.yml 自动发布（校验 tag==version → npm ci → test → build → `npm publish --provenance --access public`）；
-5. **验证**：`npm view codefree-review-helper version` == 1.0.0，provenance 指向本仓库。
+1. **代码侧（T18）**：§19.3 改动 → `npm run build`（三产物）→ `npm run pack:dry-run` 验证包内容（name/bin/files/exports/产物名）→ `vp test` 全绿 → commit；
+2. **用户（本地）**：`npm login` → `npm publish`（不带 `--provenance`，本地无 OIDC）→ 包 `codefree-review-helper@1.0.0` 出现在 npm；
+3. **用户（npmjs.com）**：包 Settings → Trusted Publisher → GitHub Actions：`kevinzhao2233` / `reviewdeck` / `publish.yml`，**勾选允许 `npm publish`**（2026-09 后新建配置默认只允许 stage publish）；可选强化：Publishing access → "Require two-factor authentication and disallow tokens"；
+4. **用户（GitHub）**：Actions 已启用（fork 默认禁用）；打 tag `v1.0.0`（本地首发同一 commit）并 push → publish.yml 跑：校验 tag==version → npm ci → test → build → 检测 1.0.0 已发布 → **跳过发布**（绿色）；后续版本 tag（如 `v1.0.1`）→ CI 正常 OIDC 发布（自动带 provenance）；
+5. **验证**：`npm view codefree-review-helper version` == 1.0.0；后续版本发布后 provenance 指向本仓库。
+
+> Trusted Publishing 配置的 **2 天时效**：配置创建后须在 2 天内完成一次成功发布，否则过期（删除重建）。步骤 3 完成后应尽快走步骤 4（可用 bump 1.0.1 或直接打 v1.0.0 tag 验证——tag 触发的 skip 也算一次"workflow 运行"但**不算成功发布**；稳妥做法是配置后 2 天内发布下一个真实版本）。
 
 ### 19.6 验收标准（AC）
 
@@ -870,18 +873,18 @@ AC 验收随各任务执行，结果统一回填 §18.6。
 | AC-19.2 | `npm run pack:dry-run`：包名/bin/files/exports 与 §19.3 一致，包内含 `dist/codefree-review-helper.mjs`、`dist/web/`、`dist/ui/codefree-review-helper-ui.js`、`skills/codefree-review-helper/` |
 | AC-19.3 | `vp test` 全绿、`npm run lint`（vp check + knip + depcruise）通过、`npm run build` 三产物正常                                                                                                 |
 | AC-19.4 | 文档一致：README 含 npm 安装方式、AGENTS.md 解冻说明、SKILL.md 含 npx 备选                                                                                                                    |
-| AC-19.5 | 用户侧配置完成（Trusted Publishing + Actions 启用）                                                                                                                                           |
-| AC-19.6 | tag `v1.0.0` 推送后 Actions 发布成功；`npm view codefree-review-helper` version=1.0.0                                                                                                         |
+| AC-19.5 | 用户侧配置完成（本地首发 1.0.0 + Trusted Publishing 配置 + Actions 启用）                                                                                                                     |
+| AC-19.6 | tag `v1.0.0` 推送后 Actions 运行绿色（1.0.0 已发布 → 幂等跳过）；`npm view codefree-review-helper` version=1.0.0                                                                              |
 | AC-19.7 | 旧 `reviewdeck` 包未被修改（无 deprecate/unpublish）                                                                                                                                          |
 
-### 19.7 验收记录（回填处）
+### 19.7 验收记录
 
-| AC      | 结果   | 证据 | 日期 |
-| ------- | ------ | ---- | ---- |
-| AC-19.1 | 待验收 |      |      |
-| AC-19.2 | 待验收 |      |      |
-| AC-19.3 | 待验收 |      |      |
-| AC-19.4 | 待验收 |      |      |
-| AC-19.5 | 待验收 |      |      |
-| AC-19.6 | 待验收 |      |      |
-| AC-19.7 | 待验收 |      |      |
+| AC      | 结果                 | 证据                                                                                                                                                                                                                                                                                                                                                                                                                                                        | 日期       |
+| ------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| AC-19.1 | **通过**             | `git grep -i reviewdeck -- ':!docs'` 仅剩：AGENTS.md:3（"原名 reviewdeck"历史说明）、AGENTS.md:30（"原 `reviewdeck` 包为上游历史包"）、package.json homepage/bugs/repository（GitHub URL 仓库名，§19.4 不可改项）；组件/导出全部为 `ReviewHelper`/`ReviewHelperProps`，产物为 `codefree-review-helper-ui.js`；额外发现并修复 lock `bin` 字段残留（`reviewdeck: dist/reviewdeck.mjs` → `codefree-review-helper: dist/codefree-review-helper.mjs`，T12 漏改） | 2026-11-19 |
+| AC-19.2 | **通过**             | `npm run pack:dry-run`：name=codefree-review-helper、version=1.0.0、filename=codefree-review-helper-1.0.0.tgz；包内含 `dist/codefree-review-helper.mjs`(46.2kB)、`dist/web/`(index.html+assets)、`dist/ui/codefree-review-helper-ui.js`(647.4kB)+style.css、`skills/codefree-review-helper/`(SKILL.md+scripts+references)、README.md                                                                                                                        | 2026-11-19 |
+| AC-19.3 | **通过**             | `vp test` 7 文件 87 用例全绿（改名后无破坏）；`npm run lint` 全链通过（vp check + knip + depcruise 51 modules 无违规）；`npm run build` 三产物正常，dist/ui 旧 `reviewdeck-ui.js` 已被 emptyOutDir 清除                                                                                                                                                                                                                                                     | 2026-11-19 |
+| AC-19.4 | **通过**             | README.md 安装段含方式一 npm（`npm i -g` / `npx`）+ 方式二源码构建；AGENTS.md Release 段解冻改写（本地首发 1.0.0 + CI 后续 + 幂等说明 + 产物名）；SKILL.md CLI 运行方式含 `npx codefree-review-helper@^1.0.0` 备选                                                                                                                                                                                                                                          | 2026-11-19 |
+| AC-19.5 | 待用户               | 本地 `npm login` + `npm publish` 首发 1.0.0 → npmjs.com 配置 Trusted Publisher（勾选允许 `npm publish`）；Actions 已启用（用户确认）                                                                                                                                                                                                                                                                                                                        |            |
+| AC-19.6 | 待用户               | tag `v1.0.0` 推送后 Actions 绿色（幂等跳过）；`npm view codefree-review-helper version` == 1.0.0                                                                                                                                                                                                                                                                                                                                                            |            |
+| AC-19.7 | **通过**（持续约束） | 未执行任何针对 npm registry 上旧 `reviewdeck` 包的操作（无 deprecate/unpublish）；`npm view reviewdeck` 状态不变                                                                                                                                                                                                                                                                                                                                            | 2026-11-19 |

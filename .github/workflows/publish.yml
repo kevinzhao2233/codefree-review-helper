@@ -36,4 +36,14 @@ jobs:
       # Trusted publishing (OIDC) needs npm >= 11.5.1; no token secret involved.
       - run: npm install -g npm@^11.5.1
 
-      - run: npm publish --provenance --access public
+      # Skip when this version is already on npm (e.g. the very first release
+      # was published manually before the package could have a trusted
+      # publisher configured — npm requires an existing package for that).
+      - name: Publish (skip if version already on npm)
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if npm view "codefree-review-helper@${VERSION}" version >/dev/null 2>&1; then
+            echo "Version ${VERSION} is already published; skipping npm publish."
+          else
+            npm publish --provenance --access public
+          fi

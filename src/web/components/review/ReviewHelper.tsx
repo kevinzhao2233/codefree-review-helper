@@ -56,7 +56,7 @@ export interface SubPatch {
   rewrites?: ResolvedRewriteBlock[];
 }
 
-export interface ReviewDeckProps {
+export interface ReviewHelperProps {
   patches: SubPatch[];
   onSubmit?: (submission: ReviewSubmission) => void | Promise<void>;
 }
@@ -903,7 +903,7 @@ function SubPatchView({
 // Main component
 // ---------------------------------------------------------------------------
 
-export function ReviewDeck({ patches, onSubmit }: ReviewDeckProps) {
+export function ReviewHelper({ patches, onSubmit }: ReviewHelperProps) {
   const [comments, setComments] = useState<ManualComment[]>([]);
   const [draftComments, setDraftComments] = useState<AgentDraftCommentDecision[]>([]);
   const [activeSub, setActiveSub] = useState(0);

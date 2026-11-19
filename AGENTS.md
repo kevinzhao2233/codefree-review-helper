@@ -27,19 +27,19 @@ npm run lint   # runs: vp test && vp check && knip && depcruise
 
 ## Release
 
-Release flow is Git-based. Do not run `npm publish` locally for this repo.
+发布目标为 npm 包 `codefree-review-helper`（2026-11-18 起；原 `reviewdeck` 包为上游历史包，不动）。
 
-> **npm 发布暂停（2026-11-18 用户决策）**：不 bump 版本、不打 tag、不发布、不迁移 npm registry 上的 `reviewdeck` 包，直到用户明确解除。`exports "./ui"`（`dist/ui/reviewdeck-ui.js`）为 npm 冻结项，保留原名。
+- 首版 `1.0.0` 由用户**本地手动发布**（`npm login` 后 `npm publish`，不带 `--provenance`）——npm 要求包先存在才能配置 Trusted Publishing；
+- 后续版本走 GitHub Actions（push tag `v*` 触发，npm Trusted Publishing/OIDC，无 NPM_TOKEN）；workflow 已幂等：版本已在 npm 上时跳过发布（因此补打历史 tag 不会红叉）；
+- `exports "./ui"` 产物名为 `dist/ui/codefree-review-helper-ui.js`（1.0.0 起改名，首发无存量用户）。
 
-正常发布流程（解冻后适用）：
+发布流程：
 
 - bump the version in `package.json` and `package-lock.json`
 - run release checks locally, typically `npm test`, `npm run build`, and `npm run pack:dry-run`
 - commit the release changes
-- push the release commit to `main`
-- create and push a version tag such as `v0.2.4`
-
-Publishing to npm is handled by GitHub Actions after the tag is pushed.
+- push the release commit to the working branch (`codefree`; `main` is archived)
+- create and push a version tag such as `v1.0.1` — GitHub Actions publishes it
 
 ## Architecture
 

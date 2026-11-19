@@ -12,7 +12,7 @@ export default defineConfig({
     lib: {
       entry: resolve(import.meta.dirname, "lib-entry.ts"),
       formats: ["es"],
-      fileName: "reviewdeck-ui",
+      fileName: "codefree-review-helper-ui",
       cssFileName: "style",
     },
     rollupOptions: {

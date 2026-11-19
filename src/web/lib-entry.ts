@@ -1,6 +1,6 @@
 import "./app.css";
 
-export { ReviewDeck } from "./components/review/ReviewDeck";
-export type { ReviewDeckProps, SubPatch } from "./components/review/ReviewDeck";
+export { ReviewHelper } from "./components/review/ReviewHelper";
+export type { ReviewHelperProps, SubPatch } from "./components/review/ReviewHelper";
 export { fetchPatches, submitReview } from "./data";
 export type { DataOptions } from "./data";

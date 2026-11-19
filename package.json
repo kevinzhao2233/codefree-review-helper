@@ -1,14 +1,14 @@
 {
   "name": "codefree-review-helper",
-  "version": "0.6.2",
-  "description": "Split large PR diffs into reviewable sub-patches via indexed groups.",
-  "homepage": "https://github.com/neutree-ai/reviewdeck",
+  "version": "1.0.0",
+  "description": "将大型 PR/MR diff 按 LLM 分组拆成可评审的子补丁，通过浏览器界面完成人工评审（CodeFree + 研发云）。",
+  "homepage": "https://github.com/kevinzhao2233/reviewdeck",
   "bugs": {
-    "url": "https://github.com/neutree-ai/reviewdeck/issues"
+    "url": "https://github.com/kevinzhao2233/reviewdeck/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/neutree-ai/reviewdeck.git"
+    "url": "https://github.com/kevinzhao2233/reviewdeck.git"
   },
   "bin": {
     "codefree-review-helper": "dist/codefree-review-helper.mjs"
@@ -23,7 +23,7 @@
   "type": "module",
   "exports": {
     "./ui": {
-      "import": "./dist/ui/reviewdeck-ui.js"
+      "import": "./dist/ui/codefree-review-helper-ui.js"
     },
     "./ui/style.css": "./dist/ui/style.css"
   },

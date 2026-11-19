@@ -7,7 +7,14 @@
 
 ## 安装
 
-本工具以本地 CLI 形式运行，需先构建：
+方式一：npm 安装（推荐，`codefree-review-helper@1.0.0` 起）：
+
+```bash
+npm i -g codefree-review-helper   # 全局安装后直接使用 codefree-review-helper
+npx codefree-review-helper        # 或免安装运行
+```
+
+方式二：从源码构建（本地 CLI 形式）：
 
 ```bash
 vp install

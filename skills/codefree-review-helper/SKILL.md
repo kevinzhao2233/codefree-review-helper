@@ -35,7 +35,11 @@ metadata:
 同时确认 CLI 运行方式（用户环境约定，未约定时先问）：
 
 ```bash
-# 本地构建产物。
+# 方式一：npm 包（推荐）。1.0.0 起发布为 codefree-review-helper，npm 安装自带
+# dist/web 评审界面，无需本地构建。
+npx codefree-review-helper@^1.0.0 <subcommand>
+
+# 方式二：本地构建产物。
 # 本地构建需 build:cli（CLI 本体）+ build:web（render 的评审 UI，缺它 render 报
 # "Web UI not built"）。一次性执行 npm run build 即含两者。
 node <codefree-review-helper-dist>/codefree-review-helper.mjs <subcommand>

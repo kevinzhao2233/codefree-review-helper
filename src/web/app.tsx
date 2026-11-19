@@ -1,7 +1,7 @@
 import "./app.css";
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { ReviewDeck, type SubPatch } from "./components/review/ReviewDeck";
+import { ReviewHelper, type SubPatch } from "./components/review/ReviewHelper";
 import { fetchPatches, submitReview } from "./data";
 
 function App() {
@@ -37,7 +37,7 @@ function App() {
 
   return (
     <div className="h-screen">
-      <ReviewDeck patches={patches} onSubmit={(submission) => submitReview(submission)} />
+      <ReviewHelper patches={patches} onSubmit={(submission) => submitReview(submission)} />
     </div>
   );
 }
