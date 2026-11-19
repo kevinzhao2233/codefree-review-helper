@@ -31,7 +31,7 @@ function fail(msg) {
 
 const args = process.argv.slice(2);
 if (args.length !== 2) {
-  fail('用法: <kind=manifest|diff> <out-file>，JSON 从 stdin 读取');
+  fail("用法: <kind=manifest|diff> <out-file>，JSON 从 stdin 读取");
 }
 const [kind, outRaw] = args;
 if (kind !== "manifest" && kind !== "diff") {
@@ -68,7 +68,7 @@ let listLen = 0;
 let contentLen = 0;
 if (kind === "manifest") {
   const list = data?.data?.dataList;
-  if (!Array.isArray(list)) fail('结构校验失败: 缺少 data.dataList（非数组）');
+  if (!Array.isArray(list)) fail("结构校验失败: 缺少 data.dataList（非数组）");
   listLen = list.length;
   if (listLen === 0) fail("结构校验失败: data.dataList 为空数组");
   for (const e of list) {

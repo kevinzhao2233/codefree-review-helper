@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
+import { Logo } from "../ui/Logo";
 import { cn } from "../../lib/utils";
 import { countCommentFlow } from "../../comment-flow";
 import {
@@ -44,6 +45,11 @@ import { segmentPatch, type PatchSegment } from "../../../core/segment";
 const DIFF_STYLE_STORAGE_KEY = "codefree-review-helper:review:diff-style";
 const DIFF_WRAP_STORAGE_KEY = "codefree-review-helper:review:diff-wrap";
 const READING_MODE_STORAGE_KEY = "codefree-review-helper:review:reading-mode";
+const SIDEBAR_WIDTH_STORAGE_KEY = "codefree-review-helper:review:sidebar-width";
+
+const SIDEBAR_MIN = 240;
+const SIDEBAR_MAX = 720;
+const SIDEBAR_DEFAULT = 320;
 
 type ReadingMode = "rewrite" | "code";
 
@@ -927,8 +933,18 @@ export function ReviewHelper({ patches, onSubmit }: ReviewHelperProps) {
   const [submittedCount, setSubmittedCount] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    if (typeof window === "undefined") return SIDEBAR_DEFAULT;
+    const stored = Number(window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY));
+    return stored >= SIDEBAR_MIN && stored <= SIDEBAR_MAX ? stored : SIDEBAR_DEFAULT;
+  });
   const [viewedFiles, setViewedFiles] = useState<Map<number, Set<string>>>(new Map());
   const prevAllViewedRef = useRef(false);
+  const sidebarResizeRef = useRef<{ dragging: boolean; startX: number; startWidth: number }>({
+    dragging: false,
+    startX: 0,
+    startWidth: 0,
+  });
 
   // Initialize draft comments from patches
   useEffect(() => {
@@ -953,6 +969,10 @@ export function ReviewHelper({ patches, onSubmit }: ReviewHelperProps) {
   useEffect(() => {
     window.localStorage.setItem(READING_MODE_STORAGE_KEY, readingMode);
   }, [readingMode]);
+
+  useEffect(() => {
+    window.localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(sidebarWidth));
+  }, [sidebarWidth]);
 
   const setRewritesExpanded = useCallback((blockIds: string[], expanded: boolean) => {
     setExpandedRewrites((prev) => {
@@ -992,6 +1012,29 @@ export function ReviewHelper({ patches, onSubmit }: ReviewHelperProps) {
     },
     [],
   );
+
+  const onSidebarDragStart = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      sidebarResizeRef.current = { dragging: true, startX: e.clientX, startWidth: sidebarWidth };
+      e.currentTarget.setPointerCapture(e.pointerId);
+    },
+    [sidebarWidth],
+  );
+
+  const onSidebarDragMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const s = sidebarResizeRef.current;
+    if (!s.dragging) return;
+    const next = Math.min(
+      SIDEBAR_MAX,
+      Math.max(SIDEBAR_MIN, s.startWidth + (e.clientX - s.startX)),
+    );
+    setSidebarWidth(next);
+  }, []);
+
+  const onSidebarDragEnd = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    sidebarResizeRef.current.dragging = false;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  }, []);
 
   const coverageBySub = useMemo(
     () =>
@@ -1256,9 +1299,24 @@ export function ReviewHelper({ patches, onSubmit }: ReviewHelperProps) {
 
   return (
     <div className="flex h-full bg-background text-foreground">
-      <nav className="flex w-72 shrink-0 flex-col border-r border-border bg-card">
+      <nav
+        className="relative flex shrink-0 flex-col border-r border-border bg-card"
+        style={{ width: sidebarWidth }}
+      >
+        <div
+          aria-hidden="true"
+          role="separator"
+          aria-orientation="vertical"
+          title="拖动调整宽度"
+          className="absolute inset-y-0 -right-px z-30 w-1.5 cursor-col-resize select-none bg-transparent transition-colors hover:bg-primary/40 active:bg-primary/60"
+          onPointerDown={onSidebarDragStart}
+          onPointerMove={onSidebarDragMove}
+          onPointerUp={onSidebarDragEnd}
+          onPointerCancel={onSidebarDragEnd}
+        />
         <div className="flex items-center justify-between px-4 pb-3 pt-5">
-          <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <Logo className="size-7" />
             <h1 className="whitespace-nowrap font-[family-name:var(--font-mono)] text-[11px] font-medium tracking-[0.2em] text-muted-foreground">
               评审
               <span className="ml-2 tracking-[0.05em] text-muted-foreground/50">
@@ -1410,9 +1468,6 @@ export function ReviewHelper({ patches, onSubmit }: ReviewHelperProps) {
               </p>
             </div>
           )}
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            提交会发送已接受的 AI 草稿和你的评论；被拒绝的草稿不会发送。
-          </p>
         </div>
       </nav>
 

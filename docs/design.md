@@ -52,6 +52,10 @@ to-diff 转换（实测 440/440 行对账通过）：
 
 要点：`pageSize` 默认 10 按分页循环取全量；`codeLineExceed=true`（超限截断）的文件跳过并提示人工评审；空 MR 报错停止。
 
+**通用大文件跳过**：`to-diff.mjs` 内置固定跳过规则（`pnpm-lock.yaml` 等 lock 文件、`.vscode/*`、`.idea/*` 等编辑器配置），体积大、无评审价值，不进 review.diff、不做 AI 分析，摘要计入 `ignored`。
+
+**SDD 规范文件保留但跳过 AI 评论**：SDD 数字员工产生的过程文档（`docs/sdd-state.yaml`、`docs/prd-index.md`、`docs/specs/*/adrs/*`、`docs/specs/*/api/*`、`docs/specs/*/items/*`）属配置文件，**照常拉 diff、出现在评审页面**，但 skill 指令要求不对其生成 `draftComments`（见 SKILL.md §4）。
+
 ### 3.3 切分与浏览器评审
 
 - `index` 输出 `## <file>` + `[index] +/- L<lineNo>: <content>` 编号清单；切分规则见 `skills/codefree-review-helper/references/split.md`（`deps-first` 默认、每组中文 description、draftComments 锚定同组 change）；
@@ -110,6 +114,8 @@ submission `comments[]`（用户评论 + 已接受草稿）→ 研发云 MCP：
 - `lang="zh-CN"`，全界面中文（工具专有词保留：patch/diff/Split/Unified/Rewrite/Code/Wrap）；CLI stderr/fallback 输出同步中文；
 - 主题：**shadcn neutral dark**——深色背景（`oklch(0.145 0 0)`）+ 白色主色（`primary oklch(0.922 0 0)` ≈ #e5e5e5），`color-scheme: dark` 使 diff 高亮走 github-dark；语义色（成功绿/待定黄/危险红）深底可读；
 - 侧栏：patch 描述多行完整展示 + 悬停 tooltip；"评审 N 个 patch"单行；进度图例带文字（已接受/待定/已拒绝 + 悬停语义说明）；
+- 侧栏宽度：可拖动调节（指针手柄），最小 240px、最大 720px，默认 320px，localStorage 持久化；
+- 侧栏顶部：评审 Logo（白底大圆角矩形 + diff 评审抽象图形），同图用作 favicon（`src/web/public/favicon.svg`）；
 - 设置：评审标题行右侧齿轮 popover（自动换行开关、对比视图分栏/合并；手写实现零新依赖；localStorage 持久化，key 前缀 `codefree-review-helper:review:*`）；
 - 快捷键提示双平台（`⌘↵ / Ctrl+↵`）；
 - LLM 输出中文：split/rewrite 参考文档与 SKILL.md 均有"输出语言"要求（description/draftComments 一律简体中文）。
@@ -138,31 +144,32 @@ submission `comments[]`（用户评论 + 已接受草稿）→ 研发云 MCP：
 
 一任务一 commit，全部完成（✅ = AC 验收通过）：
 
-| 任务 | 内容                                                                | commit            | 状态      |
-| ---- | ------------------------------------------------------------------- | ----------------- | --------- |
-| T0   | 设计文档与协作规则                                                  | d63c381           | ✅        |
-| T1   | 研发云 MCP 实测（§4 结论来源）                                      | 01311aa           | ✅        |
-| T2   | 编写 skill（SKILL.md + references + to-diff.mjs）                   | e4ef11f           | ✅        |
-| T3   | 本地链路 dry-run（发现并修复 A/D hunk 头硬约定 bug）                | ce76b77           | ✅        |
-| T4   | 端到端验收（真实 MR 评审 + 回帖 + 幂等；修复 expandUnchanged 崩溃） | 8e861b8 / 384f4a3 | ✅        |
-| T5   | 界面中文化与主题改造设计                                            | 73d90ff           | ✅        |
-| T6   | 主题与 lang 中文化                                                  | 5dcfd44           | ✅        |
-| T7   | 界面文案中文化                                                      | c1fbd4d           | ✅        |
-| T8   | 侧栏布局与设置面板                                                  | c2b569f           | ✅        |
-| T9   | LLM 输出中文指令                                                    | 14040fc / 470cf03 | ✅        |
-| T10  | 浏览器验收修复（标题单行/主题反转 dark/popover 细节）               | dd9e207 / 4809764 | ✅        |
-| T11  | 删除 NAP 与 serve 服务端（-7423 行）                                | 0082a04           | ✅        |
-| T12  | 项目改名 + CLI usage 中文化                                         | 78e320b           | ✅        |
-| T13  | skill 增加 CodeFree 环境限制                                        | aa22955           | ✅        |
-| T14  | README 中文化与 AGENTS 架构更新                                     | 7917062 / 9348f0e | ✅        |
-| T15  | render 提交结果落盘（submission.json + `-o` + 单测）                | e57cede           | ✅        |
-| T16  | 评审提交失败提示（重试/防重复点击 + 单测）                          | 4b01c10           | ✅        |
-| T17  | skill 提交流程更新（§3.4 工作流）+ §18 验收回填                     | 7ea6b06 / f05b388 | ✅        |
-| T18  | npm 包首发 1.0.0（版本/组件改名/lock/workflow 幂等/文档）           | 5850b1d           | ✅ 代码侧 |
-| T19  | `--no-open` 参数修复重启重复开 Tab                                  | 1d3bbbc           | ✅        |
-| T20  | CI 测试自包含修复（distDir 注入 + RewriteCard lint 清理）           | 17485ad           | ✅        |
-| T21  | SKILL.md 补组级 rewrites 实验特性引用 + version 对齐 1.0.2          | 3b6a5fb           | ✅        |
-| T22  | diff 落盘改 save-raw.mjs 透传+校验（杜绝 LLM 转录慢/错；SKILL §3 + design 回填） | 53a1395           | ✅        |
+| 任务 | 内容                                                                                                                                  | commit            | 状态      |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | --------- |
+| T0   | 设计文档与协作规则                                                                                                                    | d63c381           | ✅        |
+| T1   | 研发云 MCP 实测（§4 结论来源）                                                                                                        | 01311aa           | ✅        |
+| T2   | 编写 skill（SKILL.md + references + to-diff.mjs）                                                                                     | e4ef11f           | ✅        |
+| T3   | 本地链路 dry-run（发现并修复 A/D hunk 头硬约定 bug）                                                                                  | ce76b77           | ✅        |
+| T4   | 端到端验收（真实 MR 评审 + 回帖 + 幂等；修复 expandUnchanged 崩溃）                                                                   | 8e861b8 / 384f4a3 | ✅        |
+| T5   | 界面中文化与主题改造设计                                                                                                              | 73d90ff           | ✅        |
+| T6   | 主题与 lang 中文化                                                                                                                    | 5dcfd44           | ✅        |
+| T7   | 界面文案中文化                                                                                                                        | c1fbd4d           | ✅        |
+| T8   | 侧栏布局与设置面板                                                                                                                    | c2b569f           | ✅        |
+| T9   | LLM 输出中文指令                                                                                                                      | 14040fc / 470cf03 | ✅        |
+| T10  | 浏览器验收修复（标题单行/主题反转 dark/popover 细节）                                                                                 | dd9e207 / 4809764 | ✅        |
+| T11  | 删除 NAP 与 serve 服务端（-7423 行）                                                                                                  | 0082a04           | ✅        |
+| T12  | 项目改名 + CLI usage 中文化                                                                                                           | 78e320b           | ✅        |
+| T13  | skill 增加 CodeFree 环境限制                                                                                                          | aa22955           | ✅        |
+| T14  | README 中文化与 AGENTS 架构更新                                                                                                       | 7917062 / 9348f0e | ✅        |
+| T15  | render 提交结果落盘（submission.json + `-o` + 单测）                                                                                  | e57cede           | ✅        |
+| T16  | 评审提交失败提示（重试/防重复点击 + 单测）                                                                                            | 4b01c10           | ✅        |
+| T17  | skill 提交流程更新（§3.4 工作流）+ §18 验收回填                                                                                       | 7ea6b06 / f05b388 | ✅        |
+| T18  | npm 包首发 1.0.0（版本/组件改名/lock/workflow 幂等/文档）                                                                             | 5850b1d           | ✅ 代码侧 |
+| T19  | `--no-open` 参数修复重启重复开 Tab                                                                                                    | 1d3bbbc           | ✅        |
+| T20  | CI 测试自包含修复（distDir 注入 + RewriteCard lint 清理）                                                                             | 17485ad           | ✅        |
+| T21  | SKILL.md 补组级 rewrites 实验特性引用 + version 对齐 1.0.2                                                                            | 3b6a5fb           | ✅        |
+| T22  | diff 落盘改 save-raw.mjs 透传+校验（杜绝 LLM 转录慢/错；SKILL §3 + design 回填）                                                      | 53a1395           | ✅        |
+| T23  | v1.1.0：通用大文件跳过（to-diff）+ SDD 固定文件保留但跳过 AI 评论 + 侧栏可拖宽（≤720px）+ 去掉提交按钮下文案 + Logo（favicon + 侧栏） | TBD               | 待验收    |
 
 质量基线：`vp test` 7 文件 87 用例全绿；lint 全链通过（vp check + knip + depcruise 51 modules 无违规）；`pack:dry-run` 包内容验证通过（name/version/bin/files/exports/四类产物）。
 

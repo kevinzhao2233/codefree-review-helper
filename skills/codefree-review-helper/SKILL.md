@@ -2,7 +2,7 @@
 name: codefree-review-helper
 description: 仅限 CodeFree 环境使用。把研发云 MR（合并请求）的变更 diff 切成有序的评审卡片组，用 codefree-review-helper CLI 完成 index → split → render → 评论回帖的本地评审全流程。当用户贴出研发云 MR 链接、给出 repoFullName + mergeId、或说"帮我 review/评审这个 MR"时使用。
 metadata:
-  version: "1.0.3"
+  version: "1.1.0"
 ---
 
 # codefree-review-helper：研发云 MR 评审
@@ -96,6 +96,8 @@ EOF
 
 - 若返回 `codeLineExceed: true`：该文件 diff 超限不完整，仍正常落盘（脚本会跳过它并在摘要中列出），最后明确告知用户这些文件需人工到 MR 页面评审。
 - 空文件（`content: []`）正常落盘。
+- **通用大文件跳过**：`pnpm-lock.yaml` 等 lock 文件与 `.vscode/*`、`.idea/*` 等编辑器配置由 `to-diff.mjs` 自动跳过，**不进 review.diff、不做 AI 分析**。这类文件可不调 `merge_file_diff`（省请求），manifest 命中时直接跳过落盘。
+- **SDD 过程文档不在此列**：`docs/sdd-state.yaml`、`docs/prd-index.md`、`docs/specs/*/adrs/*`、`docs/specs/*/api/*`、`docs/specs/*/items/*` 等 SDD 规范固定文件**必须**出现在 diff 与评审页面上，只是**不做 AI 评论分析**（见 §4）。它们照常拉 diff、进 review.diff。
 
 ### 3.3 转换与对账
 
@@ -106,7 +108,7 @@ node <skill-dir>/scripts/to-diff.mjs <work-dir> -o review.diff
 脚本做的事：合并 manifest 分页 → 尾部空串修正（研发云会把文件末尾换行塞成 `b`/`ab` 尾部 `""`）→ 顺序指针遍历生成带行号的 hunk → 按 diffType 补文件头外壳 → 与 `addLines`/`delLines` 对账。
 
 - stdout 摘要 `match: true` 才算通过；`match: false` 时**不要手工修补 review.diff**。落盘已由 save-raw.mjs 保证是合法 JSON，此时多为**内容级不完整**（文件被截断/摘抄/抄错字段）——回到 §3.1/§3.2 用 save-raw 重新原样落盘后再重跑（≤2 次）；
-- `skipped` 非空时在最终简报中列明跳过的文件。
+- `skipped`（超限）与 `ignored`（通用大文件）非空时在最终简报中列明对应的文件。
 
 ### 3.4 索引校验
 
@@ -126,6 +128,8 @@ node <codefree-review-helper-dist>/codefree-review-helper.mjs index review.diff 
    - `draftComments` 可选：仅限 diff 能支撑的具体问题，锚定同组内的一个 `change`；
    - `rewrites` 可选（实验特性）：组级 `[{ changes, title?, rewrite }]`，评审界面把被覆盖的变更行原位替换为等价且更聚焦的 Markdown 表达，代码始终一键可达。仅当用户要求 rewrites 时生成；用户自带 rewrite 提示词时优先遵循，否则按 [references/rewrite.md](references/rewrite.md) 的规范生成；
    - **输出语言**：`description`、`draftComments[].body` 与 `rewrites[].rewrite`/`title` 用简体中文（代码标识符、命令、API 名等专有名词保持原文）。
+
+**SDD 规范固定文件不生成 AI 评论**：SDD 数字员工产生的过程文档（固定位置：`docs/sdd-state.yaml`、`docs/prd-index.md`、`docs/specs/*/adrs/*`、`docs/specs/*/api/*`、`docs/specs/*/items/*`）属于配置文件，仍会出现在 diff 与评审页面中，但**不对它们生成 `draftComments`，不做内容级 AI 评论分析**。这类文件正常参与分组（保证 diff 完整覆盖），组 `description` 可标注为"SDD 规范文件"；仅当 diff 中存在与 SDD 配置直接冲突（如字段/结构明显错误）时才例外，并先向用户说明。
 
 ```json
 {

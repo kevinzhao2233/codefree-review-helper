@@ -8,11 +8,49 @@
 //   <data-dir>/diffs/<i>.json      按 manifest 合并后顺序、第 i 个文件的 merge_file_diff 完整返回（i 从 0 起）
 //
 // 输出：stdout 一行 JSON 摘要；-o 指定时另写 unified diff 文件。
-// 摘要含 files / skipped（codeLineExceed 跳过的文件）/ expectedAdd / expectedDel /
-// actualAdd / actualDel / match。match=false 时退出码 1。
+// 摘要含 files / skipped（codeLineExceed 跳过的文件）/ ignored（固定跳过的文件）/
+// expectedAdd / expectedDel / actualAdd / actualDel / match。match=false 时退出码 1。
 
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+
+// ---------------------------------------------------------------------------
+// 固定跳过规则：通用的大文件 / 编辑器配置——体积大、对评审无信息量，不进 review.diff
+// （下标保留，仅跳过转换）。命中即跳过，不计入对账，进度摘要计入 ignored。
+// 注意：SDD 过程文档（docs/specs、prd-index 等）**不在此列**——它们必须出现在
+// diff 与评审页面上，仅由 SKILL 指令约束不生成 AI 评论。
+// ---------------------------------------------------------------------------
+const IGNORE_GLOBS = [
+  "pnpm-lock.yaml",
+  "package-lock.json",
+  "yarn.lock",
+  "bun.lockb",
+  "composer.lock",
+  "Cargo.lock",
+  "poetry.lock",
+  "Gemfile.lock",
+  "Pipfile.lock",
+  "uv.lock",
+  ".vscode/*",
+  ".vscode-server/*",
+  ".idea/*",
+];
+
+/** 把 glob（支持 `*`/`**`）转成正则；`*` 不跨目录段，`**` 跨。 */
+function globToRegExp(glob) {
+  const escaped = glob.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  // 先处理 `**`（跨目录段），再处理 `*`（不跨目录段）。
+  const pattern = escaped.replace(/\*\*/g, ".*").replace(/\*/g, "[^/]*");
+  return new RegExp(`^${pattern}$`);
+}
+
+const IGNORE_PATTERNS = IGNORE_GLOBS.map(globToRegExp);
+
+/** 文件相对路径（正斜杠）是否命中忽略规则。 */
+function isIgnoredFile(fileName) {
+  const norm = fileName.replace(/\\/g, "/");
+  return IGNORE_PATTERNS.some((re) => re.test(norm));
+}
 
 function fail(msg) {
   console.error(`to-diff: ${msg}`);
@@ -49,6 +87,7 @@ if (entries.length === 0) fail("合并后的 dataList 为空（MR 无变更文�
 // 2. 逐文件转换
 const out = [];
 const skipped = [];
+const ignored = [];
 let expectedAdd = 0;
 let expectedDel = 0;
 let actualAdd = 0;
@@ -56,6 +95,14 @@ let actualDel = 0;
 
 for (let i = 0; i < entries.length; i++) {
   const e = entries[i];
+
+  // 固定跳过：通用大文件 / 编辑器配置（lock、.vscode 等）——体积大、无评审价值，
+  // 不进 review.diff。保留原 index，保证 diffs/<i>.json 命名与 manifest 顺序一致。
+  if (isIgnoredFile(e.fileName)) {
+    ignored.push(e.fileName);
+    continue;
+  }
+
   const df = join(dataDir, "diffs", `${i}.json`);
   if (!existsSync(df)) fail(`缺少 diffs/${i}.json（对应 ${e.fileName}）`);
   let data;
@@ -151,6 +198,7 @@ if (outFile) writeFileSync(outFile, out.join("\n") + "\n");
 const summary = {
   files: entries.length,
   skipped,
+  ignored,
   expectedAdd,
   expectedDel,
   actualAdd,
