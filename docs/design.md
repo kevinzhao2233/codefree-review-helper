@@ -162,7 +162,7 @@ submission `comments[]`（用户评论 + 已接受草稿）→ 研发云 MCP：
 | T19  | `--no-open` 参数修复重启重复开 Tab                                  | 1d3bbbc           | ✅        |
 | T20  | CI 测试自包含修复（distDir 注入 + RewriteCard lint 清理）           | 17485ad           | ✅        |
 | T21  | SKILL.md 补组级 rewrites 实验特性引用 + version 对齐 1.0.2          | 3b6a5fb           | ✅        |
-| T22  | diff 落盘改 save-raw.mjs 透传+校验（杜绝 LLM 转录慢/错；SKILL §3 + design 回填） | 待提交 | ✅ 代码侧 |
+| T22  | diff 落盘改 save-raw.mjs 透传+校验（杜绝 LLM 转录慢/错；SKILL §3 + design 回填） | 53a1395           | ✅        |
 
 质量基线：`vp test` 7 文件 87 用例全绿；lint 全链通过（vp check + knip + depcruise 51 modules 无违规）；`pack:dry-run` 包内容验证通过（name/version/bin/files/exports/四类产物）。
 
