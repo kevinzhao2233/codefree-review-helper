@@ -2,7 +2,7 @@
 name: codefree-review-helper
 description: 仅限 CodeFree 环境使用。把研发云 MR（合并请求）的变更 diff 切成有序的评审卡片组，用 codefree-review-helper CLI 完成 index → split → render → 评论回帖的本地评审全流程。当用户贴出研发云 MR 链接、给出 repoFullName + mergeId、或说"帮我 review/评审这个 MR"时使用。
 metadata:
-  version: "1.0.2"
+  version: "1.0.3"
 ---
 
 # codefree-review-helper：研发云 MR 评审
@@ -44,6 +44,8 @@ npx codefree-review-helper <subcommand>
 node <codefree-review-helper-dist>/codefree-review-helper.mjs <subcommand>
 ```
 
+路径约定（下文统一使用）：`<skill-dir>` = 本 skill 的目录（含 `scripts/` 与 `SKILL.md`，即仓库 `skills/codefree-review-helper/`）；`<work-dir>` = 一次性评审工作目录（`mktemp -d` / `$env:TEMP` 下新建）；`<codefree-review-helper-dist>` = `dist/codefree-review-helper.mjs` 所在目录。
+
 ## 2. 定位 MR
 
 1. 调 `get_mr_info(mergeId)` 校验存在性与访问权限，取标题、状态、源/目标分支。**注意**：`mergeRequestStatus` 的数值枚举与工具文档（0/1/2）实测不符（出现过 7），**不要按 0/1/2 硬解码**，向用户报告原始数值并建议以 MR 页面为准。
@@ -52,15 +54,45 @@ node <codefree-review-helper-dist>/codefree-review-helper.mjs <subcommand>
 
 ## 3. 获取并拼装 diff
 
-**MCP 工具的返回是 Gerrit 风格结构化 JSON（`ab`/`a`/`b` 行数组 + `hunk` 行号），不是文本 diff**。LLM 直接转大 JSON 不可靠，必须用本 skill 附带的转换脚本。工作目录用一次性目录（如 `mktemp -d`）。
+**MCP 工具的返回是 Gerrit 风格结构化 JSON（`ab`/`a`/`b` 行数组 + `hunk` 行号），不是文本 diff**。工作目录用一次性目录（如 `mktemp -d`）。
+
+> **落盘唯一通道：`scripts/save-raw.mjs`。** 严禁用 write 工具手工重建这段 JSON——
+> MCP 返回落在会话上下文里，让 LLM 逐字符转录超大 JSON 既慢又易错（缺引号/截断/摘抄，
+> to-diff 对账时才暴露）。正确做法是**原样透传**：把 MCP 返回的完整字符串经 stdin 交给脚本，
+> 脚本负责 `JSON.parse` 合法性、结构校验、规范化落盘。脚本 stdout 输出摘要；失败会带精确
+> 错误（非法 JSON 给 position + 出错片段，结构错误给缺哪个字段），按提示修正后重试（≤2 次）。
 
 ### 3.1 拉取变更文件列表并落盘
 
-分页调 `merge_file_changes(mergeId, pageNum, pageSize)`（pageNum 从 1 起），**每页的完整 JSON 返回原样存为 `manifest-<pageNum>.json`**（不要手工摘抄字段——脚本要整体解析）。翻页直到取完全部文件；以页面返回的 `dataCount`/`dataList` 实际条数判断是否还有下一页，不得截断。
+分页调 `merge_file_changes(mergeId, pageNum, pageSize)`（pageNum 从 1 起），**每页把 MCP 返回的完整字符串原样经 stdin 交给脚本落盘为 `manifest-<pageNum>.json`**：
+
+```bash
+# bash：把 MCP 返回粘贴到 heredoc 原样传入
+node <skill-dir>/scripts/save-raw.mjs manifest <work-dir>/manifest-1.json <<'EOF'
+{ 整段 MCP 返回，原样粘贴，不要改写 }
+EOF
+```
+
+```powershell
+# PowerShell：把 MCP 返回作为 here-string 传入
+@'
+{ 整段 MCP 返回，原样粘贴，不要改写 }
+'@ | node <skill-dir>/scripts/save-raw.mjs manifest <work-dir>/manifest-1.json
+```
+
+脚本会校验 `data.dataList` 为非空数组且每条含 `fileName`。翻页直到取完全部文件；以页面返回的 `dataCount`/`dataList` 实际条数判断是否还有下一页，不得截断。
 
 ### 3.2 逐文件取 diff 并落盘
 
-按 manifest 合并后的文件顺序（第 i 个文件，i 从 0 起），对每个变更文件调 `merge_file_diff(mergeId, fileName)`，**完整返回存为 `diffs/<i>.json`**。
+按 manifest 合并后的文件顺序（第 i 个文件，i 从 0 起），对每个变更文件调 `merge_file_diff(mergeId, fileName)`，**把 MCP 返回的完整字符串原样经 stdin 交给脚本落盘为 `diffs/<i>.json`**（方式同 §3.1，kind 用 `diff`）：
+
+```bash
+node <skill-dir>/scripts/save-raw.mjs diff <work-dir>/diffs/<i>.json <<'EOF'
+{ 整段 MCP 返回，原样粘贴，不要改写 }
+EOF
+```
+
+脚本会校验 `data.content` 为数组且每块含 `ab`/`a`/`b`。
 
 - 若返回 `codeLineExceed: true`：该文件 diff 超限不完整，仍正常落盘（脚本会跳过它并在摘要中列出），最后明确告知用户这些文件需人工到 MR 页面评审。
 - 空文件（`content: []`）正常落盘。
@@ -73,7 +105,7 @@ node <skill-dir>/scripts/to-diff.mjs <work-dir> -o review.diff
 
 脚本做的事：合并 manifest 分页 → 尾部空串修正（研发云会把文件末尾换行塞成 `b`/`ab` 尾部 `""`）→ 顺序指针遍历生成带行号的 hunk → 按 diffType 补文件头外壳 → 与 `addLines`/`delLines` 对账。
 
-- stdout 摘要 `match: true` 才算通过；`match: false` 时**不要手工修补 review.diff**，检查落盘 JSON 是否被截断/摘抄，重新完整落盘后重跑（≤2 次）；
+- stdout 摘要 `match: true` 才算通过；`match: false` 时**不要手工修补 review.diff**。落盘已由 save-raw.mjs 保证是合法 JSON，此时多为**内容级不完整**（文件被截断/摘抄/抄错字段）——回到 §3.1/§3.2 用 save-raw 重新原样落盘后再重跑（≤2 次）；
 - `skipped` 非空时在最终简报中列明跳过的文件。
 
 ### 3.4 索引校验

@@ -19,7 +19,7 @@
 用户："帮我 review 这个 MR：<链接 / repoFullName+mergeId>"
   ① 定位 MR ──── 研发云 MCP：get_mr_info（标题/状态/分支/repoFullName）
   ② 获取 diff ── merge_file_changes（分页）→ merge_file_diff 逐文件
-                 → scripts/to-diff.mjs 转为 unified diff → review.diff
+                 → scripts/save-raw.mjs 原样落盘（校验）→ scripts/to-diff.mjs 转 unified diff → review.diff
   ③ 索引 ─────── codefree-review-helper index review.diff > pr.index.txt
   ④ 切分 ─────── CodeFree 按 references/split.md 生成 split.json（groups + draftComments）
   ⑤ 验证渲染 ─── codefree-review-helper split review.diff split.json -o output/
@@ -36,9 +36,13 @@
 - 一律 `get_mr_info(mergeId)` 直查：**列表接口 status 枚举与实际值失配**（实测 MR 状态 7，按文档枚举 0/1/2 查不到），状态按原始值向用户报告；
 - MR 不存在/无权限（`code 3068`）→ 报错停止。
 
-### 3.2 diff 获取与转换（`scripts/to-diff.mjs`）
+### 3.2 diff 获取与转换（`scripts/save-raw.mjs` + `scripts/to-diff.mjs`）
 
 `merge_file_diff` 返回 **Gerrit 风格结构化 JSON**（`ab`/`a`/`b` 行数组 + `hunk` 行号），不是文本 diff。转换算法（实测 440/440 行对账通过）：
+
+**落盘通道（save-raw.mjs）**：MCP 返回落在会话上下文，若让 LLM 用 write 工具"重写"这段 JSON 落盘，等于逐字符转录超大文本——又慢又易错（实测 0.json/3.json 因 LLM 转录缺引号/截断导致 JSON.parse 失败，to-diff 对账 `match:false` 才暴露）。save-raw.mjs 把"转录"改为"透传 + 校验"：LLM 把 MCP 返回的**完整字符串经 stdin 原样**交给脚本，脚本负责 `JSON.parse` 合法性、结构校验（manifest 校验 `data.dataList`，diff 校验 `data.content` 含 `ab/a/b`）、规范化落盘；失败带精确错误（非法 JSON 给 position + 片段，结构错误给缺哪个字段）。
+
+to-diff 转换（实测 440/440 行对账通过）：
 
 1. **尾部空串修正**：`sum(ab+b)` 超过 `hunk.newEnd` 时从尾部丢弃空串；
 2. **顺序指针遍历**：每块按 `ab → a → b` 输出 context/-/+ 行，行号累进；
@@ -158,6 +162,7 @@ submission `comments[]`（用户评论 + 已接受草稿）→ 研发云 MCP：
 | T19  | `--no-open` 参数修复重启重复开 Tab                                  | 1d3bbbc           | ✅        |
 | T20  | CI 测试自包含修复（distDir 注入 + RewriteCard lint 清理）           | 17485ad           | ✅        |
 | T21  | SKILL.md 补组级 rewrites 实验特性引用 + version 对齐 1.0.2          | 3b6a5fb           | ✅        |
+| T22  | diff 落盘改 save-raw.mjs 透传+校验（杜绝 LLM 转录慢/错；SKILL §3 + design 回填） | 待提交 | ✅ 代码侧 |
 
 质量基线：`vp test` 7 文件 87 用例全绿；lint 全链通过（vp check + knip + depcruise 51 modules 无违规）；`pack:dry-run` 包内容验证通过（name/version/bin/files/exports/四类产物）。
 

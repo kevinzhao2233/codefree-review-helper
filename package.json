@@ -1,6 +1,6 @@
 {
   "name": "codefree-review-helper",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "将大型 PR/MR diff 按 LLM 分组拆成可评审的子补丁，通过浏览器界面完成人工评审（CodeFree + 研发云）。",
   "homepage": "https://github.com/kevinzhao2233/codefree-review-helper",
   "bugs": {
