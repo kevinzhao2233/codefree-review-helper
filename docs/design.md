@@ -2,7 +2,7 @@
 
 > **前身**：fork 自 neutree-ai 的 reviewdeck（基于 ClaudeCode + GitHub/GitLab 的大 diff 评审工具）。2026-11 起转型为 **CodeFree + 研发云** 本地评审工具并更名；NAP 多用户形态与 serve 服务端已删除，仅保留本地 CLI。
 >
-> **文档地位**：本仓库唯一设计文档，承载需求、方案、任务、AC 与验收结果；实测结论直接回填本文件，禁止新建其他设计/验收文档。
+> **文档地位**：本仓库唯一设计文档，作为单一事实源，承载需求、方案、任务、AC 与验收结果；实测结论直接回填本文件，禁止新建其他设计/验收文档。
 
 ## 1. 定位
 
@@ -126,8 +126,8 @@ submission `comments[]`（用户评论 + 已接受草稿）→ 研发云 MCP：
   1. 本地 `npm login` + `npm publish` 首发 1.0.0（不带 `--provenance`，本地无 OIDC）；
   2. npmjs.com 包 Settings → Trusted Publisher → GitHub Actions：`kevinzhao2233` / `reviewdeck`（fork 仓库名，未改名） / `publish.yml`，勾选**允许 `npm publish`**（新建配置默认仅 stage publish）；⚠️ 配置后 **2 天内**须完成一次成功 CI 发布，否则过期重建；
   3. 后续版本：bump `package.json` + `package-lock.json` → release checks（`npm test` / `npm run build` / `npm run pack:dry-run`）→ commit → push 到 `codefree` 分支（`main` 已归档不演进）→ 打 tag `v*` → Actions 以 Trusted Publishing（OIDC，无 NPM_TOKEN）发布并自动带 provenance；
-- `publish.yml` 幂等：发布前 `npm view` 检查版本，已存在则跳过（本地首发后补打 `v1.0.0` tag 不红叉）；
-- `repository.url` 必须与 GitHub 仓库完全一致（OIDC 校验依赖，已指向 fork）；
+- `publish.yml` 幂等：发布前 `npm view` 检查版本，已存在则跳过；
+- `repository.url` 必须与 GitHub 仓库完全一致；
 - 旧上游 npm 包不做任何操作（不 deprecate/unpublish）。
 
 ## 8. 任务总账
@@ -157,12 +157,12 @@ submission `comments[]`（用户评论 + 已接受草稿）→ 研发云 MCP：
 | T18  | npm 包首发 1.0.0（版本/组件改名/lock/workflow 幂等/文档）           | 5850b1d           | ✅ 代码侧 |
 | T19  | `--no-open` 参数修复重启重复开 Tab                                  | 1d3bbbc           | ✅        |
 | T20  | CI 测试自包含修复（distDir 注入 + RewriteCard lint 清理）           | 17485ad           | ✅        |
+| T21  | SKILL.md 补组级 rewrites 实验特性引用 + version 对齐 1.0.2          | —                 | ✅        |
 
 质量基线：`vp test` 7 文件 87 用例全绿；lint 全链通过（vp check + knip + depcruise 51 modules 无违规）；`pack:dry-run` 包内容验证通过（name/version/bin/files/exports/四类产物）。
 
 ## 9. 遗留项
 
-- **发布进展**：✅ 全部完成。1.0.0 手动首发；`v1.0.1` tag 因未 bump 版本校验失败（tag 已删，版本号跳过）；`v1.0.2` 首次 CI run 因测试依赖本地 dist 残留失败，T20 修复后重打 tag 发布成功（OIDC Trusted Publishing 首次 CI 发布通过，dist-tags.latest=1.0.2，provenance 签名在，2 天时效满足）。仓库已改名 `codefree-review-helper`（package.json URL 已同步）。经验：改源码后必须 `npm run build` 再端到端；测试不得依赖本地构建残留；npm registry 读副本有分钟级延迟，发布后验证需稍等或看 CI 日志；
 - 未实测场景（留待真实 MR）：已合并/已关闭 MR 的评审与回帖；deletions 侧全局评论；行内失败降级全局；空评论不调写接口；`codeLineExceed=true` 超限文件行为；
 - W-4：LLM 中文输出已落地指令，实际中文 draftComments 待下次真实评审验证；
 - "展开更多上下文"按钮点击崩溃（`@pierre/diffs` 上游限制，主流程不受影响，待上游解决）；

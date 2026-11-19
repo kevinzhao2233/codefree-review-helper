@@ -2,7 +2,7 @@
 name: codefree-review-helper
 description: 仅限 CodeFree 环境使用。把研发云 MR（合并请求）的变更 diff 切成有序的评审卡片组，用 codefree-review-helper CLI 完成 index → split → render → 评论回帖的本地评审全流程。当用户贴出研发云 MR 链接、给出 repoFullName + mergeId、或说"帮我 review/评审这个 MR"时使用。
 metadata:
-  version: "0.1"
+  version: "1.0.2"
 ---
 
 # codefree-review-helper：研发云 MR 评审
@@ -35,11 +35,10 @@ metadata:
 同时确认 CLI 运行方式（用户环境约定，未约定时先问）：
 
 ```bash
-# 方式一：npm 包（推荐）。1.0.0 起发布为 codefree-review-helper，npm 安装自带
-# dist/web 评审界面，无需本地构建。
-npx codefree-review-helper@^1.0.0 <subcommand>
+# 方式一
+npx codefree-review-helper <subcommand>
 
-# 方式二：本地构建产物。
+# 方式二：本地调试可用。
 # 本地构建需 build:cli（CLI 本体）+ build:web（render 的评审 UI，缺它 render 报
 # "Web UI not built"）。一次性执行 npm run build 即含两者。
 node <codefree-review-helper-dist>/codefree-review-helper.mjs <subcommand>
@@ -93,7 +92,8 @@ node <codefree-review-helper-dist>/codefree-review-helper.mjs index review.diff 
    - 每个编号恰好归入一组，连续编号用区间写法 `"0-23"`；
    - 每组 `description` 说明"这组为何在此、评审时看什么"；
    - `draftComments` 可选：仅限 diff 能支撑的具体问题，锚定同组内的一个 `change`；
-   - **输出语言**：`description` 与 `draftComments[].body` 用简体中文（代码标识符、命令、API 名等专有名词保持原文）。
+   - `rewrites` 可选（实验特性）：组级 `[{ changes, title?, rewrite }]`，评审界面把被覆盖的变更行原位替换为等价且更聚焦的 Markdown 表达，代码始终一键可达。仅当用户要求 rewrites 时生成；用户自带 rewrite 提示词时优先遵循，否则按 [references/rewrite.md](references/rewrite.md) 的规范生成；
+   - **输出语言**：`description`、`draftComments[].body` 与 `rewrites[].rewrite`/`title` 用简体中文（代码标识符、命令、API 名等专有名词保持原文）。
 
 ```json
 {
@@ -188,7 +188,7 @@ submission JSON 结构：
 
 发送顺序按 comments 数组顺序逐条执行；单条失败不中断其余评论。
 
-### 6.5 必填元数据（T1 实测来源）
+### 6.5 必填元数据（实测来源）
 
 | 参数           | 来源                                                                  |
 | -------------- | --------------------------------------------------------------------- |
