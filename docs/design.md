@@ -156,13 +156,13 @@ submission `comments[]`（用户评论 + 已接受草稿）→ 研发云 MCP：
 | T17  | skill 提交流程更新（§3.4 工作流）+ §18 验收回填                     | 7ea6b06 / f05b388 | ✅        |
 | T18  | npm 包首发 1.0.0（版本/组件改名/lock/workflow 幂等/文档）           | 5850b1d           | ✅ 代码侧 |
 | T19  | `--no-open` 参数修复重启重复开 Tab                                  | 1d3bbbc           | ✅        |
-| T20  | CI 测试自包含修复（distDir 注入 + RewriteCard lint 清理）           | —                 | ✅        |
+| T20  | CI 测试自包含修复（distDir 注入 + RewriteCard lint 清理）           | 17485ad           | ✅        |
 
 质量基线：`vp test` 7 文件 87 用例全绿；lint 全链通过（vp check + knip + depcruise 51 modules 无违规）；`pack:dry-run` 包内容验证通过（name/version/bin/files/exports/四类产物）。
 
 ## 9. 遗留项
 
-- **发布进展**：1.0.0 已手动发布 ✓；`v1.0.1` tag 因未 bump 版本校验失败（tag 已删）；`v1.0.2` 首次 CI run 因测试依赖本地 dist 残留失败（T20 修复：`startReviewServer` 支持注入 `distDir`，测试自建假 dist）。仓库已改名 `codefree-review-helper`，npmjs.com Trusted Publisher 绑定的仓库名需删除重建；
+- **发布进展**：✅ 全部完成。1.0.0 手动首发；`v1.0.1` tag 因未 bump 版本校验失败（tag 已删，版本号跳过）；`v1.0.2` 首次 CI run 因测试依赖本地 dist 残留失败，T20 修复后重打 tag 发布成功（OIDC Trusted Publishing 首次 CI 发布通过，dist-tags.latest=1.0.2，provenance 签名在，2 天时效满足）。仓库已改名 `codefree-review-helper`（package.json URL 已同步）。经验：改源码后必须 `npm run build` 再端到端；测试不得依赖本地构建残留；npm registry 读副本有分钟级延迟，发布后验证需稍等或看 CI 日志；
 - 未实测场景（留待真实 MR）：已合并/已关闭 MR 的评审与回帖；deletions 侧全局评论；行内失败降级全局；空评论不调写接口；`codeLineExceed=true` 超限文件行为；
 - W-4：LLM 中文输出已落地指令，实际中文 draftComments 待下次真实评审验证；
 - "展开更多上下文"按钮点击崩溃（`@pierre/diffs` 上游限制，主流程不受影响，待上游解决）；
