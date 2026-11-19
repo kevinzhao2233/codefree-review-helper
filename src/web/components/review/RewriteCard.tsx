@@ -6,11 +6,14 @@ import type { ResolvedRewriteBlock } from "../../../core/types";
 
 /** Tables wider than the card scroll on their own instead of being clipped. */
 const markdownComponents: Components = {
-  table: ({ node: _, ...props }) => (
-    <div className="rw-table">
-      <table {...props} />
-    </div>
-  ),
+  table: (props) => {
+    delete props.node;
+    return (
+      <div className="rw-table">
+        <table {...props} />
+      </div>
+    );
+  },
 };
 
 /**

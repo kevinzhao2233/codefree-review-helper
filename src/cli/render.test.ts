@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from "vite-plus/test";
-import { mkdtempSync, writeFileSync, rmSync, readFileSync, existsSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync, readFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -185,11 +185,18 @@ describe("startReviewServer", () => {
   async function startTestServer(
     opts: Partial<StartReviewServerOptions> = {},
   ): Promise<TestServer> {
+    // Fake dist dir: tests must not depend on a locally built dist/web
+    // (on CI, npm test runs before npm run build).
+    const distDir = join(dir, "fake-dist");
+    mkdirSync(distDir);
+    writeFileSync(join(distDir, "index.html"), "<!doctype html><title>test</title>");
+
     let handle!: TestServer;
     await new Promise<void>((ready) => {
       const submission = startReviewServer([makeSubPatch()], {
         port: 0,
         openBrowser: false,
+        distDir,
         ...opts,
         onReady: (info) => {
           handle = { ...info, submission };

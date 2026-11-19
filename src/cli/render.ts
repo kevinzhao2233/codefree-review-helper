@@ -60,6 +60,8 @@ export interface StartReviewServerOptions {
   port?: number;
   submissionPath?: string;
   openBrowser?: boolean;
+  /** Serve UI from this directory instead of probing built dist (for tests). */
+  distDir?: string;
   onReady?: (info: { port: number; url: string; close: () => Promise<void> }) => void;
 }
 
@@ -72,7 +74,7 @@ export async function startReviewServer(
   opts: StartReviewServerOptions = {},
 ): Promise<ReviewSubmission> {
   const port = opts.port ?? 3847;
-  const distDir = await resolveDistDir();
+  const distDir = opts.distDir ?? (await resolveDistDir());
 
   return new Promise<ReviewSubmission>((resolveComments) => {
     const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
