@@ -157,7 +157,7 @@ submission `comments[]`（用户评论 + 已接受草稿）→ 研发云 MCP：
 | T18  | npm 包首发 1.0.0（版本/组件改名/lock/workflow 幂等/文档）           | 5850b1d           | ✅ 代码侧 |
 | T19  | `--no-open` 参数修复重启重复开 Tab                                  | 1d3bbbc           | ✅        |
 | T20  | CI 测试自包含修复（distDir 注入 + RewriteCard lint 清理）           | 17485ad           | ✅        |
-| T21  | SKILL.md 补组级 rewrites 实验特性引用 + version 对齐 1.0.2          | —                 | ✅        |
+| T21  | SKILL.md 补组级 rewrites 实验特性引用 + version 对齐 1.0.2          | 3b6a5fb           | ✅        |
 
 质量基线：`vp test` 7 文件 87 用例全绿；lint 全链通过（vp check + knip + depcruise 51 modules 无违规）；`pack:dry-run` 包内容验证通过（name/version/bin/files/exports/四类产物）。
 
