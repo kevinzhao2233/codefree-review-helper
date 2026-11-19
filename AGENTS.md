@@ -1,6 +1,6 @@
 # codefree-review-helper
 
-Split large PR/MR diffs into reviewable sub-patches via LLM-assigned groups. CodeFree + 研发云 only; local CLI form. (原名 reviewdeck，2026-11 起更名。)
+Split large PR/MR diffs into reviewable sub-patches via LLM-assigned groups. CodeFree + 研发云 only; local CLI form. (借鉴 reviewdeck。)
 
 ## Toolchain: Vite+
 
@@ -27,7 +27,7 @@ npm run lint   # runs: vp test && vp check && knip && depcruise
 
 ## Release
 
-发布目标为 npm 包 `codefree-review-helper`（2026-11-18 起；原 `reviewdeck` 包为上游历史包，不动）。
+发布目标为 npm 包 `codefree-review-helper`。
 
 - 首版 `1.0.0` 由用户**本地手动发布**（`npm login` 后 `npm publish`，不带 `--provenance`）——npm 要求包先存在才能配置 Trusted Publishing；
 - 后续版本走 GitHub Actions（push tag `v*` 触发，npm Trusted Publishing/OIDC，无 NPM_TOKEN）；workflow 已幂等：版本已在 npm 上时跳过发布（因此补打历史 tag 不会红叉）；
