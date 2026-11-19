@@ -784,17 +784,18 @@ AC 验收随各任务执行，结果统一回填 §18.6。
 
 ### 18.6 验收记录
 
-| AC      | 结果                                           | 证据                                                                                                                                                                                                                                   | 日期       |
-| ------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| AC-18.1 | **通过**                                       | 单测 `src/web/data.test.ts`：502 → 抛 `提交评审失败：HTTP 502`；2xx → resolve（stub `globalThis.fetch`，node 环境）                                                                                                                    | 2026-11-18 |
-| AC-18.2 | **通过**（UI 渲染留用户浏览器确认）            | 端到端场景②：kill render 后 POST 连接拒绝（前端 fetch reject → `data.ts` 抛错路径已被 AC-18.1 单测覆盖）；`ReviewDeck.tsx` `submitError` 状态渲染"评审提交失败"提示 + "重试"按钮                                                       | 2026-11-18 |
-| AC-18.3 | **通过**                                       | 单测 `render.test.ts`"提交后落盘且内容与 stdout JSON 一致"；端到端场景①（`output-t12/`，`-p 3987`）：POST 200 → `submission.json` == 提交 JSON == stdout，`.tmp` 无残留                                                                | 2026-11-18 |
-| AC-18.4 | **通过**                                       | 端到端：场景③ stdin + `-o` → `stdin-sub.json` 落盘内容正确（stderr"提交后将写入：…"）；场景④ stdin 无 `-o` → 200 + stderr"警告：未指定落盘路径，submission 仅输出到 stdout" + 不落盘；目录模式默认 `<dir>/submission.json`（场景①）    | 2026-11-18 |
-| AC-18.5 | **通过**                                       | 单测：非法 JSON → 400 `{error:"非法 JSON"}`；落盘失败（父目录不存在）→ 500 且服务器保持存活（再次提交仍响应 500）                                                                                                                      | 2026-11-18 |
-| AC-18.6 | **通过**                                       | SKILL.md 五项俱全：§5.0 工作目录硬性约束（系统临时目录、禁入仓库）、§5.2 后台启动（PowerShell/bash 双示例）、§5.3 轮询 `submission.json`（含"用户说已提交也先查文件"）、§5.4 重启先删旧 `submission.json`、端口占用处理（`-p` 换端口） | 2026-11-18 |
-| AC-18.7 | **通过**                                       | `vp test` 7 文件 87 用例全绿（新增 `data.test.ts` 2 例 + `render.test.ts` 4 例）；`npm run lint` 全链通过（vp check + knip + depcruise 无违规）                                                                                        | 2026-11-18 |
-| AC-18.8 | **通过**（CLI 侧自动化，浏览器 UI 留用户确认） | 场景①（`-p 3987`）：后台 render → 提交 → `submission.json` 出现且内容正确、进程正常退出；场景②（`-p 3988`）：kill → POST 连接拒绝 → 重启（先删旧文件）→ 提交场景2 内容 → 成功且文件为本次内容                                          | 2026-11-18 |
-| AC-18.9 | **通过**                                       | `git diff 3706fc5..HEAD` 中 `reviewdeck` 仅出现在 diff 头文件名（`ReviewDeck.tsx` 组件路径，T18 计划改名项，非新增引用）；`version` 保持 0.6.2 未 bump、未打 tag、未 publish                                                           | 2026-11-18 |
+| AC       | 结果                                    | 证据                                                                                                                                                                                                                                                    | 日期       |
+| -------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| AC-18.1  | **通过**                                | 单测 `src/web/data.test.ts`：502 → 抛 `提交评审失败：HTTP 502`；2xx → resolve（stub `globalThis.fetch`，node 环境）                                                                                                                                     | 2026-11-18 |
+| AC-18.2  | **通过**（浏览器 UI 用户已确认）        | 端到端场景②：kill render 后 POST 连接拒绝（前端 fetch reject → `data.ts` 抛错路径已被 AC-18.1 单测覆盖）；`ReviewDeck.tsx` `submitError` 状态渲染"评审提交失败"提示 + "重试"按钮；2026-11-18 用户实测：失败提示界面 ✓、评论保留 ✓                       | 2026-11-18 |
+| AC-18.3  | **通过**                                | 单测 `render.test.ts`"提交后落盘且内容与 stdout JSON 一致"；端到端场景①（`output-t12/`，`-p 3987`）：POST 200 → `submission.json` == 提交 JSON == stdout，`.tmp` 无残留                                                                                 | 2026-11-18 |
+| AC-18.4  | **通过**                                | 端到端：场景③ stdin + `-o` → `stdin-sub.json` 落盘内容正确（stderr"提交后将写入：…"）；场景④ stdin 无 `-o` → 200 + stderr"警告：未指定落盘路径，submission 仅输出到 stdout" + 不落盘；目录模式默认 `<dir>/submission.json`（场景①）                     | 2026-11-18 |
+| AC-18.5  | **通过**                                | 单测：非法 JSON → 400 `{error:"非法 JSON"}`；落盘失败（父目录不存在）→ 500 且服务器保持存活（再次提交仍响应 500）                                                                                                                                       | 2026-11-18 |
+| AC-18.6  | **通过**                                | SKILL.md 五项俱全：§5.0 工作目录硬性约束（系统临时目录、禁入仓库）、§5.2 后台启动（PowerShell/bash 双示例）、§5.3 轮询 `submission.json`（含"用户说已提交也先查文件"）、§5.4 重启先删旧 `submission.json`、端口占用处理（`-p` 换端口）                  | 2026-11-18 |
+| AC-18.7  | **通过**                                | `vp test` 7 文件 87 用例全绿（新增 `data.test.ts` 2 例 + `render.test.ts` 4 例）；`npm run lint` 全链通过（vp check + knip + depcruise 无违规）                                                                                                         | 2026-11-18 |
+| AC-18.8  | **通过**（浏览器 UI 用户已确认）        | 场景①（`-p 3847` 真实浏览器提交）：`submission.json` == 用户操作（comments 空 + 2 条 agent 草稿 pending）、进程自动退出；场景②（kill → 用户提交见失败提示 → 重启 → 旧界面点"重试"）：成功，`submission.json` == 用户 AGENTS.md:54 评论 + 2 pending 草稿 | 2026-11-18 |
+| AC-18.9  | **通过**                                | `git diff 3706fc5..HEAD` 中 `reviewdeck` 仅出现在 diff 头文件名（`ReviewDeck.tsx` 组件路径，T18 计划改名项，非新增引用）；`version` 保持 0.6.2 未 bump、未打 tag、未 publish                                                                            | 2026-11-18 |
+| AC-18.10 | **通过**（浏览器不弹新 Tab 留用户确认） | CLI 端到端：`render <dir> --no-open` → stderr 出现"已禁用自动打开浏览器（--no-open）。"且不执行 `exec`；不传参时行为不变（默认自动打开）；SKILL.md §5.2 补"重启必须 --no-open"、§5.4 重启步骤含 `--no-open` + 旧界面点"重试"（评论保留）                | 2026-11-18 |
 
 补充记录：
 
@@ -802,8 +803,9 @@ AC 验收随各任务执行，结果统一回填 §18.6。
 - **startReviewServer 可注入性**：`onReady({ port, url, close })` 暴露实际监听端口与手动关闭句柄（测试用 `port: 0` 随机端口 + `close()` 清理）；`openBrowser: false` 供 CI/测试禁弹浏览器。
 - **submissionPath 计算规则**（`src/cli/main.ts` `cmdRender`）：目录模式默认 `<dir>/submission.json`（`-o` 覆盖）；stdin 模式仅显式 `-o` 时落盘。
 - **幂等性**：落盘采用"写 `.tmp` → 删旧 → rename"原子序列，同目录重复评审（agent 重启后用户再提交）覆盖旧文件。
-- 提交序列：e57cede（T15 render 落盘）→ 4b01c10（T16 失败提示）→ 7ea6b06（T17 skill 提交流程更新），一任务一 commit。
-- 浏览器 UI 实操验收（AC-18.2 失败提示界面、AC-18.8 重试流程）待用户确认。
+- 提交序列：e57cede（T15 render 落盘）→ 4b01c10（T16 失败提示）→ 7ea6b06（T17 skill 提交流程更新）→ f05b388（T17 验收回填），一任务一 commit。
+- **浏览器 UI 实操验收（2026-11-18 用户完成）**：① 正常流程（`-p 3847`）：真实浏览器直接提交 → `submission.json` == 用户操作（comments 空 + 2 条 agent 草稿 pending）+ UI"评审已提交"；② 失败流程：用户在 AGENTS.md:54 加评论 → agent kill 服务 → 用户点提交见"评审提交失败"提示（评论保留）→ agent 重启（先删旧文件）→ 用户旧界面点"重试" → 成功，`submission.json` == 用户评论 + 2 pending 草稿。
+- **新发现 bug（AC-18.10，2026-11-18 验收时用户报告）**：重启 render 会无条件再开一个新 Tab——新 Tab 的 React state 为空（评论全在旧 Tab 内存里），用户困惑且存在丢失风险。**根因**：`render` 启动时无条件 `exec("start <url>")`，`StartReviewServerOptions.openBrowser` 已支持 `false` 但 CLI 未暴露。**修复**：`main.ts` 加 `--no-open` 参数（`openBrowser: !values["no-open"]`）；`render.ts` 禁用时 stderr 打印"已禁用自动打开浏览器（--no-open）。"；usage 补充说明与示例；SKILL.md §5.2 补"重启必须 `--no-open`"、§5.4 重启步骤含 `--no-open`（用户旧界面点"重试"，评论保留；仅界面已关闭才重开 Tab）。
 
 ---
 

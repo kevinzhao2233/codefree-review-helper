@@ -150,7 +150,10 @@ export async function startReviewServer(
           }),
       });
 
-      if (opts.openBrowser === false) return;
+      if (opts.openBrowser === false) {
+        console.error("已禁用自动打开浏览器（--no-open）。");
+        return;
+      }
 
       // Open browser
       import("node:child_process").then(({ exec }) => {

@@ -113,7 +113,8 @@ function printRenderUsage() {
 为人工评审准备生成的子补丁。
 
 - 输入可以是 "split -o" 输出的目录，或 "split" 的 stdin
-- 服务模式会打开浏览器并阻塞等待人工提交评审
+- 服务模式会打开浏览器并阻塞等待人工提交评审（--no-open 禁用，重启服务时用，
+  避免新开 Tab 导致旧页面评论丢失）
 - 提交的 JSON 包含最终评论，以及 agent 草稿的接受/拒绝状态
 - 评审结果落盘：目录模式默认写 <目录>/submission.json，-o <文件> 可覆盖；
   stdin 模式仅在显式传 -o 时落盘
@@ -121,6 +122,7 @@ function printRenderUsage() {
 
 示例：
   codefree-review-helper render output/
+  codefree-review-helper render output/ --no-open
   cat split.json | codefree-review-helper split pr.diff - | codefree-review-helper render -`);
 }
 
@@ -353,6 +355,7 @@ async function cmdRender(args: string[]) {
     options: {
       port: { type: "string", short: "p" },
       output: { type: "string", short: "o" },
+      "no-open": { type: "boolean" },
     },
     allowPositionals: true,
   });
@@ -380,7 +383,11 @@ async function cmdRender(args: string[]) {
   const port = values.port ? parseInt(values.port, 10) : undefined;
   const submissionPath =
     values.output ?? (source !== "-" ? resolve(source, "submission.json") : undefined);
-  const submission = await startReviewServer(subPatches, { port, submissionPath });
+  const submission = await startReviewServer(subPatches, {
+    port,
+    submissionPath,
+    openBrowser: !values["no-open"],
+  });
 
   // Output submission as JSON to stdout
   process.stdout.write(JSON.stringify(submission, null, 2));
